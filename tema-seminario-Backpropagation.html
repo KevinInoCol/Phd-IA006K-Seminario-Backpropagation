@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Definição do Tema do Seminário</title>
+<style>
+  @page { size: A4; margin: 25mm 22mm; }
+  body { font: 12pt/1.55 "Helvetica Neue", Arial, sans-serif; color: #1d1d1f; margin: 0; }
+  .k { font-size: 9.5pt; letter-spacing: .06em; text-transform: uppercase; color: #3b5bdb; font-weight: 700; }
+  h1 { font-size: 17pt; line-height: 1.3; margin: 6pt 0 18pt; }
+  h2 { font-size: 10pt; letter-spacing: .05em; text-transform: uppercase; color: #5f6368; margin: 20pt 0 6pt; }
+  table { border-collapse: collapse; }
+  td { padding: 3pt 24pt 3pt 0; }
+  td.ra { font-variant-numeric: tabular-nums; }
+  p { margin: 0; }
+  .ref { margin-top: 22pt; font-size: 9.5pt; color: #5f6368; border-top: 1px solid #e3e1da; padding-top: 8pt; }
+</style>
+</head>
+<body>
+  <div class="k">IA006K · Seminários sobre a História da Inteligência Artificial · UNICAMP</div>
+  <h1>Backpropagation: como as redes neurais aprenderam a treinar suas camadas ocultas</h1>
+
+  <h2>Integrantes</h2>
+  <table>
+    <tr><td>Kevin Inofuente</td><td class="ra">RA 272316</td></tr>
+    <tr><td>Sara Reis</td><td class="ra">RA 251648</td></tr>
+  </table>
+
+  <h2>Resumo</h2>
+  <p>O seminário apresenta o artigo <i>“Learning representations by back-propagating errors”</i>, de David Rumelhart, Geoffrey Hinton e Ronald Williams, publicado na <i>Nature</i> em 1986. Começamos pelo contexto histórico: do neurônio artificial de McCulloch e Pitts (1943) e do perceptron de Rosenblatt (1958) até o livro <i>Perceptrons</i> de Minsky e Papert (1969), que mostrou os limites das redes de uma única camada, e o período de pouco interesse que se seguiu, em que ninguém sabia como ajustar os pesos das camadas intermediárias. Em seguida, apresentamos o artigo: o procedimento de retropropagação do erro, que usa a regra da cadeia para levar o erro da saída de volta, camada por camada, e ajustar cada peso por descida do gradiente, e os experimentos dos autores (detecção de simetria e árvores genealógicas), que mostram as unidades ocultas aprendendo sozinhas representações úteis do problema. Por fim, discutimos o que veio depois: as redes convolucionais, as LSTM, a AlexNet, os Transformers e os grandes modelos de linguagem atuais, todos treinados com o mesmo princípio.</p>
+
+  <div class="ref">Referência: D. E. Rumelhart, G. E. Hinton, R. J. Williams. Learning representations by back-propagating errors. <i>Nature</i> 323, 533–536 (1986). doi:10.1038/323533a0</div>
+</body>
+</html>

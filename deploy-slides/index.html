@@ -1,0 +1,1021 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backpropagation · Seminário</title>
+<style>
+  :root {
+    --bg: #f7f6f2; --card: #ffffff; --ink: #1d1d1f; --muted: #5f6368; --line: #e3e1da;
+    --accent: #3b5bdb; --accent-soft: #e8edff;
+    --bwd: #d9480f; --bwd-soft: #fff0e6;
+    --fwd: #2b8a3e; --fwd-soft: #e6f6ea;
+    --code: #f1efe8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #16171a; }
+  body { color: var(--ink); font: 20px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  p { margin: 10px 0; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; }
+  code { background: var(--code); padding: 1px 6px; border-radius: 5px; }
+  .fwd { color: var(--fwd); font-weight: 600; }
+  .bwd { color: var(--bwd); font-weight: 600; }
+
+  /* ===== Diapositivas ===== */
+  .slide { display: none; position: absolute; left: 50%; top: 50%; width: 1280px; height: 720px;
+    transform: translate(-50%, -50%) scale(var(--s, 1)); background: var(--bg); color: var(--ink);
+    padding: 34px 52px 30px; overflow: hidden; border-radius: 4px; }
+  .slide.active { display: flex; flex-direction: column; }
+  .sh { margin-bottom: 12px; flex: none; }
+  .kick { color: var(--accent); font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: .06em; }
+  .sh h2 { font-size: 36px; line-height: 1.15; margin: 2px 0 0; }
+  .snum { display: inline-grid; place-items: center; min-width: 46px; height: 46px; margin-right: 14px; border-radius: 12px; background: var(--accent); color: #fff; font-size: 28px; font-weight: 800; vertical-align: 3px; }
+  .lead { margin: 4px 0 16px; font-size: 25px; }
+  .title-slide { justify-content: center; align-items: flex-start; padding: 70px 90px; }
+  .title-slide h1 { font-size: 66px; line-height: 1.05; margin: 10px 0 18px; max-width: 1080px; }
+  .t-kicker { color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: 16px; }
+  .t-sub { font-size: 30px; line-height: 1.35; margin: 0 0 22px; max-width: 1000px; }
+  .t-authors { font-size: 22px; margin: 0 0 6px; }
+  .t-ref { font-size: 17px; color: var(--muted); margin: 0 0 6px; max-width: 1050px; }
+  .t-presenters { margin-top: 26px; padding-top: 18px; border-top: 2px solid var(--line); display: flex; gap: 34px; align-items: baseline; flex-wrap: wrap; }
+  .t-presenters span { color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: 15px; }
+  .t-presenters b { font-size: 26px; }
+  .t-hint { position: absolute; bottom: 26px; left: 90px; font-size: 14px; color: var(--muted); }
+  .agenda { font-size: 27px; line-height: 1.45; margin: 6px 0 0; padding-left: 34px; }
+  .agenda li { margin: 10px 0; }
+  .agenda small { display: block; font-size: 20px; color: var(--muted); }
+  .cards { display: grid; gap: 16px; margin: 10px 0 14px; }
+  .cards.c2 { grid-template-columns: 1fr 1fr; }
+  .cards.c3 { grid-template-columns: 1fr 1fr 1fr; }
+  .card2 { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; font-size: 21px; line-height: 1.45; }
+  .card2 > b:first-child { display: block; color: var(--accent); margin-bottom: 6px; font-size: 21px; }
+  .card2 small { display: block; color: var(--muted); font-size: 14px; margin-top: 6px; }
+  .card2 ul { margin: 4px 0 0; padding-left: 20px; }
+  .card2.f { border-left: 5px solid var(--fwd); }
+  .card2.b { border-left: 5px solid var(--bwd); }
+  .note { border-left: 4px solid var(--accent); background: var(--accent-soft); border-radius: 8px; padding: 14px 20px; margin: 12px 0; font-size: 22px; }
+  .note.warn { border-left-color: var(--bwd); background: var(--bwd-soft); }
+  .quote { border-left: 4px solid var(--line); padding: 4px 0 4px 18px; margin: 10px 0; font-size: 19px; color: var(--muted); font-style: italic; }
+  .quote b { font-style: normal; color: var(--ink); }
+  .tbl { width: 100%; border-collapse: collapse; margin: 6px 0 14px; font-size: 20px; }
+  .tbl th { text-align: left; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .04em; padding: 6px 10px; border-bottom: 2px solid var(--line); }
+  .tbl td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .tbl tr.hl td { background: var(--accent-soft); }
+  .bul { font-size: 21px; margin: 4px 0 0; padding-left: 24px; }
+  .bul li { margin: 6px 0; }
+  .src { flex: none; font-size: 12.5px; line-height: 1.4; color: var(--muted); border-top: 1px solid var(--line); padding-top: 8px; }
+  .src > b { color: var(--ink); font-size: 13px; }
+  .src p { margin: 4px 0; }
+  .cap { font-size: 12.5px; color: var(--muted); margin: 0; font-style: italic; line-height: 1.4; }
+  .ours { display: inline-block; font-size: 12px; font-weight: 700; color: var(--bwd); background: var(--bwd-soft); border-radius: 999px; padding: 1px 9px; font-style: normal; }
+  .real { display: inline-block; font-size: 12px; font-weight: 700; color: var(--fwd); background: var(--fwd-soft); border-radius: 999px; padding: 1px 9px; font-style: normal; }
+
+  /* ecuaciones */
+  .eqgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 6px 0 12px; }
+  .eq { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 18px; }
+  .eq .eqrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .eq math { font-size: 1.5em; }
+  .eqnum { color: var(--muted); font-size: 18px; }
+  .eq p { margin: 4px 0 0; font-size: 18px; color: var(--muted); }
+  .eq.big math { font-size: 1.8em; }
+
+  /* animaciones paso a paso */
+  .anim { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 380px; gap: 22px; }
+  .a-left { display: flex; flex-direction: column; min-height: 0; }
+  .a-left > svg { flex: 1; min-height: 0; width: 100%; height: 100%; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+  .a-right { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+  .ectext { font-size: 18px; line-height: 1.5; margin: 0; flex: 1; min-height: 0; overflow: auto; }
+  .ectext b { color: var(--accent); }
+  .ecchips { display: flex; flex-wrap: wrap; gap: 5px; margin: 0 0 8px; flex: none; }
+  .ecchips button { font: inherit; font-size: 12px; padding: 3px 9px; border-radius: 999px; cursor: pointer; border: 1px solid var(--line); background: transparent; color: var(--muted); }
+  .ecchips button.done { color: var(--accent); border-color: var(--accent); }
+  .ecchips button.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .ecctrl { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ecctrl button, .btn { font: inherit; font-size: 13.5px; padding: 5px 12px; border-radius: 999px; cursor: pointer; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .btn.on { background: var(--accent); color: #fff; }
+  svg text { font-family: inherit; font-size: 14px; fill: var(--muted); }
+  svg .ink { fill: var(--ink); }
+
+  /* demo XOR */
+  .xor-wrap { flex: 1; min-height: 0; display: grid; grid-template-columns: 420px 1fr; gap: 22px; }
+  .xor-wrap canvas { width: 420px; height: 420px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+  .xor-side { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+  #xor-loss { width: 100%; height: 230px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+  .stat { display: flex; gap: 26px; font-size: 20px; }
+  .stat b { color: var(--accent); font-variant-numeric: tabular-nums; }
+  #xor-msg { font-size: 19px; min-height: 2.8em; }
+
+  /* demo simetría */
+  .sym-wrap { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 380px; gap: 22px; }
+  #sym-svg { width: 100%; height: 100%; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+  #sym-svg .inp { cursor: pointer; }
+  .sym-out { font-size: 20px; }
+  .sym-out .big { font-size: 30px; font-weight: 800; }
+
+  /* familias */
+  .fam-wrap { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 380px; gap: 22px; }
+  #fam-svg { width: 100%; height: 100%; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+  .fam-btns { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+  .net-stack { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
+  .net-stack .lay { border: 1.5px solid var(--line); background: var(--card); border-radius: 10px; padding: 7px 12px; font-size: 18px; text-align: center; }
+  .net-stack .lay.hid { border-color: var(--accent); background: var(--accent-soft); }
+  .net-stack .lay small { color: var(--muted); font-size: 14px; }
+  .net-stack .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .net-stack .dn { text-align: center; color: var(--muted); font-size: 14px; line-height: 1; }
+
+  pre.code { background: #1f2026; color: #e6e7ea; border-radius: 12px; padding: 18px 22px; font-size: 20px; line-height: 1.55; margin: 8px 0 12px; }
+  pre.code .c { color: #8fa1b3; }
+  pre.code .k { color: #c792ea; }
+
+  .summary { font-size: 26px; line-height: 1.5; background: var(--card); border: 2px solid var(--accent); border-radius: 14px; padding: 24px 28px; }
+
+  /* HUD */
+  .hud { position: fixed; right: 14px; bottom: 10px; display: flex; gap: 8px; align-items: center; font: 13px -apple-system, system-ui, sans-serif; color: #b9bcc3; z-index: 10; opacity: .35; transition: opacity .2s; }
+  .hud:hover { opacity: 1; }
+  .hud button { font: inherit; background: #2a2c31; color: #e6e7ea; border: 1px solid #3a3d44; border-radius: 6px; padding: 3px 9px; cursor: pointer; }
+  .progress { position: fixed; top: 0; left: 0; height: 3px; background: #6c8cff; z-index: 10; transition: width .2s; }
+</style>
+</head>
+<body>
+<div class="progress"></div>
+
+<!-- 1 · Título -->
+<section class="slide title-slide">
+  <div class="t-kicker">Seminário · IA006K · UNICAMP</div>
+  <h1>Learning representations by back-propagating errors</h1>
+  <p class="t-sub">Aprender representações propagando os erros para trás: o artigo que tornou possível treinar redes neurais com camadas ocultas</p>
+  <p class="t-authors">David E. Rumelhart, Geoffrey E. Hinton, Ronald J. Williams</p>
+  <p class="t-ref">Nature 323, 533–536 · 9 de outubro de 1986 · UC San Diego e Carnegie-Mellon University</p>
+  <div class="t-presenters"><span>Apresentação</span><b>Kevin Inofuente Colque</b><b>Sara Reis</b></div>
+  <p class="t-hint">→ / espaço: avançar · ← voltar · F: tela cheia · A: apêndice (equações)</p>
+</section>
+
+<!-- 2 · Roteiro -->
+<section class="slide">
+  <header class="sh"><h2>Roteiro</h2></header>
+  <ol class="agenda">
+    <li><b>O momento histórico</b><small>do neurônio artificial (1943) ao “inverno” das redes neurais e à volta em 1986</small></li>
+    <li><b>O artigo</b><small>a rede, o erro, o passo para trás, um exemplo com números e os experimentos do artigo</small></li>
+    <li><b>O que veio depois</b><small>de 1986 ao ChatGPT: o mesmo algoritmo, em escala muito maior</small></li>
+  </ol>
+</section>
+
+<!-- 3 · Línea de tiempo 1943–1986 -->
+<section class="slide">
+  <header class="sh"><span class="kick">1 · O momento histórico</span><h2><span class="snum">1</span>De 1943 a 1986</h2></header>
+  <div class="anim">
+    <div class="a-left"><div class="ecchips" id="hist-chips"></div><svg id="hist-svg" viewBox="0 0 600 340" role="img" aria-label="Linha do tempo 1943 a 1986"></svg></div>
+    <div class="a-right"><div class="ectext" id="hist-text" aria-live="polite"></div>
+      <div class="ecctrl"><button type="button" id="hist-prev">◀</button><button type="button" id="hist-play">▶ Reproduzir tudo</button><button type="button" id="hist-next">▶</button></div>
+      <div class="src"><b>Referências do próprio artigo</b>
+        <p>[1] Rosenblatt, <i>Principles of Neurodynamics</i> (1961) · [2] Minsky &amp; Papert, <i>Perceptrons</i> (1969) · [3] Le Cun, <i>Proc. Cognitiva</i> 85 · [4] Rumelhart, Hinton &amp; Williams, em <i>Parallel Distributed Processing</i>, vol. 1 (1986)</p></div></div>
+  </div>
+</section>
+
+<!-- 4 · Perceptrón y XOR -->
+<section class="slide">
+  <header class="sh"><span class="kick">1 · O momento histórico</span><h2><span class="snum">1</span>O perceptron e o problema do XOR</h2></header>
+  <div class="anim">
+    <div class="a-left"><div class="ecchips" id="xorp-chips"></div><svg id="xorp-svg" viewBox="0 0 600 340" role="img" aria-label="Perceptron, AND, OR e XOR"></svg></div>
+    <div class="a-right"><div class="ectext" id="xorp-text" aria-live="polite"></div>
+      <div class="ecctrl"><button type="button" id="xorp-prev">◀</button><button type="button" id="xorp-play">▶ Reproduzir tudo</button><button type="button" id="xorp-next">▶</button></div>
+      <p class="cap">O XOR é o exemplo clássico. O artigo usa outro problema do mesmo tipo: detectar simetria (mais adiante).</p></div>
+  </div>
+</section>
+
+<!-- 5 · El nudo: unidades ocultas -->
+<section class="slide">
+  <header class="sh"><span class="kick">1 · O momento histórico</span><h2><span class="snum">1</span>O que faltava: ensinar as camadas ocultas</h2></header>
+  <p class="lead">Com uma camada escondida no meio, a rede resolve o XOR. O problema era outro: <strong>como ajustar os pesos dessa camada?</strong></p>
+  <div class="cards c2">
+    <div class="card2"><b>Na saída é fácil</b>Sabemos o que a rede deveria responder. Se errou, sabemos <em>quanto</em> e <em>para que lado</em> corrigir.</div>
+    <div class="card2 b"><b>No meio, ninguém diz</b>Ninguém informa o que uma unidade oculta deveria fazer. Se a saída errou, <strong>qual unidade do meio teve culpa, e quanta?</strong></div>
+  </div>
+  <div class="quote">“In perceptrons, there are ‘feature analysers’ between the input and output that are not true hidden units because their input connections are <b>fixed by hand</b> […] they do not learn representations.” <span style="font-style:normal">(p. 533)</span></div>
+  <div class="note">O artigo resolve isso: <strong>passa a culpa da saída para trás</strong>, camada por camada. Daí o nome: <em>back-propagating errors</em>.</div>
+</section>
+
+<!-- 6 · El artículo -->
+<section class="slide">
+  <header class="sh"><span class="kick">2 · O artigo</span><h2><span class="snum">2</span>O artigo em uma página</h2></header>
+  <div class="cards c3">
+    <div class="card2"><b>Onde</b><em>Nature</em>, seção <em>Letters</em>. Só <strong>4 páginas</strong> (533–536). Recebido em 1º de maio e aceito em 31 de julho de 1986.</div>
+    <div class="card2"><b>Quem</b>Rumelhart e Williams (Institute for Cognitive Science, UC San Diego) e Hinton (Carnegie-Mellon).</div>
+    <div class="card2"><b>Versão longa</b>Um capítulo do livro <em>Parallel Distributed Processing</em> (1986), referência [4] do artigo.</div>
+  </div>
+  <div class="quote">“We describe a new learning procedure, back-propagation, for networks of neurone-like units. The procedure repeatedly adjusts the weights of the connections in the network so as to minimize a measure of the difference between the actual output vector of the net and the desired output vector. As a result of the weight adjustments, <b>internal ‘hidden’ units</b> which are not part of the input or output come to <b>represent important features of the task domain</b> […]” (resumo)</div>
+  <div class="note">Em uma frase: <strong>ajustar os pesos aos poucos para diminuir o erro</strong>. O efeito colateral é o mais interessante: as unidades do meio <strong>aprendem sozinhas a representar</strong> o problema. Daí o título: <em>learning representations</em>.</div>
+</section>
+
+<!-- 7 · Ecuaciones 1–3 -->
+<section class="slide">
+  <header class="sh"><span class="kick">2 · O artigo · passo para frente</span><h2><span class="snum">2</span>A rede: somar, “apertar” e medir o erro</h2></header>
+  <div class="eqgrid">
+    <div class="eq"><div class="eqrow"><math><mrow><msub><mi>x</mi><mi>j</mi></msub><mo>=</mo><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>y</mi><mi>i</mi></msub><msub><mi>w</mi><mrow><mi>j</mi><mi>i</mi></mrow></msub></mrow></math><span class="eqnum">(1)</span></div>
+      <p>Cada unidade <i>j</i> <b>soma</b> o que recebe: a saída <i>y<sub>i</sub></i> de cada vizinho de baixo vezes o peso <i>w<sub>ji</sub></i>. O <i>bias</i> é só mais uma entrada, sempre igual a 1.</p></div>
+    <div class="eq"><div class="eqrow"><math><mrow><msub><mi>y</mi><mi>j</mi></msub><mo>=</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><msup><mi>e</mi><mrow><mo>−</mo><msub><mi>x</mi><mi>j</mi></msub></mrow></msup></mrow></mfrac></mrow></math><span class="eqnum">(2)</span></div>
+      <p>Depois <b>“aperta”</b> a soma entre 0 e 1 com a sigmoide. Diferente do degrau do perceptron, ela é <b>suave</b>: tem inclinação em todo ponto.</p></div>
+  </div>
+  <div class="eqgrid">
+    <svg viewBox="0 0 520 190" role="img" aria-label="Degrau e sigmoide" style="width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card)" id="sig-svg"></svg>
+    <div class="eq"><div class="eqrow"><math><mrow><mi>E</mi><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><munder><mo>∑</mo><mi>c</mi></munder><munder><mo>∑</mo><mi>j</mi></munder><msup><mrow><mo stretchy="false">(</mo><msub><mi>y</mi><mrow><mi>j</mi><mo>,</mo><mi>c</mi></mrow></msub><mo>−</mo><msub><mi>d</mi><mrow><mi>j</mi><mo>,</mo><mi>c</mi></mrow></msub><mo stretchy="false">)</mo></mrow><mn>2</mn></msup></mrow></math><span class="eqnum">(3)</span></div>
+      <p>O <b>erro total</b>: para cada exemplo <i>c</i> e cada saída <i>j</i>, a diferença entre o que a rede deu (<i>y</i>) e o desejado (<i>d</i>), ao quadrado. <b>Objetivo: deixar <i>E</i> o menor possível.</b></p></div>
+  </div>
+  <p class="cap">O artigo (p. 534): qualquer função com derivada limitada serve; a sigmoide é só a escolha usada.</p>
+</section>
+
+<!-- 8 · Ejemplo con números -->
+<section class="slide">
+  <header class="sh"><span class="kick">2 · O artigo · passo para trás</span><h2><span class="snum">2</span>Passo a passo, com números</h2></header>
+  <div class="anim">
+    <div class="a-left"><div class="ecchips" id="num-chips"></div><svg id="num-svg" viewBox="0 0 600 340" role="img" aria-label="Exemplo numérico de backpropagation"></svg></div>
+    <div class="a-right"><div class="ectext" id="num-text" aria-live="polite"></div>
+      <div class="ecctrl"><button type="button" id="num-prev">◀</button><button type="button" id="num-play">▶ Reproduzir tudo</button><button type="button" id="num-next">▶</button></div>
+      <p class="cap"><span class="ours">exemplo nosso</span> Rede e pesos inventados para mostrar as Eq. 1–8 do artigo. Contas feitas com todas as casas decimais e arredondadas na tela.</p></div>
+  </div>
+</section>
+
+<!-- 9 · Bajar la ladera -->
+<section class="slide">
+  <header class="sh"><span class="kick">2 · O artigo · atualizar os pesos</span><h2><span class="snum">2</span>Descer a ladeira do erro (Eq. 8 e 9)</h2></header>
+  <div class="anim">
+    <div class="a-left"><div class="ecchips" id="gd-chips"></div><svg id="gd-svg" viewBox="0 0 600 340" role="img" aria-label="Descida do gradiente"></svg></div>
+    <div class="a-right"><div class="ectext" id="gd-text" aria-live="polite"></div>
+      <div class="ecctrl"><button type="button" id="gd-prev">◀</button><button type="button" id="gd-play">▶ Reproduzir tudo</button><button type="button" id="gd-next">▶</button></div>
+      <p class="cap"><span class="ours">ilustração nossa</span> Curva inventada, com um único peso. Os passos são calculados de verdade com as Eq. 8 e 9.</p></div>
+  </div>
+</section>
+
+<!-- 10 · Experimente: XOR -->
+<section class="slide">
+  <header class="sh"><span class="kick">2 · O artigo · experimente</span><h2><span class="snum">2</span>Treinar o XOR ao vivo</h2></header>
+  <div class="xor-wrap">
+    <canvas id="xor-canvas" width="420" height="420" aria-label="Mapa da saída da rede"></canvas>
+    <div class="xor-side">
+      <p style="margin:0;font-size:20px">Rede 2 → 2 → 1 com sigmoides. Pesos iniciais aleatórios entre −0,3 e 0,3, <b>ε = 0,5</b> e <b>α = 0,9</b>, como no artigo. A cor mostra a saída da rede em cada ponto do plano: <span style="color:#3b5bdb;font-weight:700">azul ≈ 1</span>, claro ≈ 0.</p>
+      <div class="ecctrl"><button type="button" class="btn" id="xor-run">▶ Treinar</button><button type="button" class="btn" id="xor-reset">↺ Nova semente</button></div>
+      <div class="stat"><span>semente <b id="xor-seed">1</b></span><span>varreduras <b id="xor-t">0</b></span><span>erro E <b id="xor-e">–</b></span></div>
+      <svg id="xor-loss" viewBox="0 0 600 230" role="img" aria-label="Curva do erro"></svg>
+      <div id="xor-msg"></div>
+      <p class="cap"><span class="ours">simulação nossa</span> O artigo não treina o XOR. Usamos o mesmo procedimento (Eq. 1–9). Uma “varredura” passa por todos os 4 exemplos e só então muda os pesos, como o artigo faz.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 11 · Experimento 1: simetría -->
+<section class="slide">
+  <header class="sh"><span class="kick">2 · O artigo · experimento 1 (Figura 1)</span><h2><span class="snum">2</span>Detectar simetria com só 2 unidades ocultas</h2></header>
+  <div class="sym-wrap">
+    <svg id="sym-svg" viewBox="0 0 600 360" role="img" aria-label="Rede da Figura 1"></svg>
+    <div class="a-right">
+      <p style="margin:0;font-size:18.5px">Tarefa: dizer se as 6 entradas formam um <b>espelho</b> em torno do centro (ex.: 1 0 1 1 0 1). Uma entrada sozinha não diz nada. Por isso <b>é preciso</b> uma camada oculta.</p>
+      <p style="margin:0;font-size:16px;color:var(--muted)">Clique nas entradas (embaixo) para ligar e desligar.</p>
+      <div class="sym-out" id="sym-out"></div>
+      <div class="ecctrl"><button type="button" class="btn" id="sym-rand">Aleatório</button><button type="button" class="btn" id="sym-mirror">Um espelho</button><button type="button" class="btn" id="sym-all">Testar os 64</button></div>
+      <div id="sym-all-out" style="font-size:17px"></div>
+      <p class="cap"><span class="real">pesos reais</span> Pesos e bias copiados da Figura 1 do artigo. Treino: 1.425 varreduras pelos 64 padrões, ε = 0,1, α = 0,9.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 12 · Simetría: cómo lo resolvió -->
+<section class="slide">
+  <header class="sh"><span class="kick">2 · O artigo · experimento 1 (Figura 1)</span><h2><span class="snum">2</span>A solução que a rede encontrou sozinha</h2></header>
+  <div class="cards c2">
+    <div class="card2"><b>Pesos espelhados</b>Para cada unidade oculta, os pesos de um lado do centro são <strong>iguais e de sinal oposto</strong> aos do outro lado: 14,2 e −14,2; −3,6 e 3,6; 7,2 e −7,2.<small>Se a entrada é um espelho, tudo se cancela: as duas ocultas recebem 0 e ficam desligadas (o bias delas é −1,1). A saída, com bias +6,4, liga.</small></div>
+    <div class="card2"><b>Proporção 1 : 2 : 4</b>De cada lado, os pesos estão na proporção 3,6 : 7,2 : 14,2. Assim, cada um dos 8 padrões possíveis de um lado dá uma <strong>soma diferente</strong>.<small>Só o espelho exato cancela. Qualquer outro padrão liga uma das ocultas, que desliga a saída.</small></div>
+  </div>
+  <div class="note">Ninguém programou essa regra. A rede <strong>inventou uma representação</strong>: “quanto o lado esquerdo difere do direito”. É isso que o título quer dizer com <em>learning representations</em>.</div>
+  <p class="cap">Minsky e Papert [2] provaram que esta tarefa exige unidades intermediárias (o artigo cita isso na p. 535).</p>
+</section>
+
+<!-- 13 · Experimento 2: familias -->
+<section class="slide">
+  <header class="sh"><span class="kick">2 · O artigo · experimento 2 (Figura 2)</span><h2><span class="snum">2</span>Duas árvores genealógicas iguais na forma</h2></header>
+  <div class="fam-wrap">
+    <svg id="fam-svg" viewBox="0 0 600 340" role="img" aria-label="Árvores genealógicas inglesa e italiana"></svg>
+    <div class="a-right">
+      <p style="margin:0;font-size:18.5px">Uma família inglesa e uma italiana com <b>a mesma estrutura</b>. A informação vira frases de 3 termos: <b>(pessoa 1, relação, pessoa 2)</b>.</p>
+      <p style="margin:0;font-size:16.5px;color:var(--muted)">12 relações: pai, mãe, marido, esposa, filho, filha, tio, tia, irmão, irmã, sobrinho, sobrinha.</p>
+      <div class="fam-btns" id="fam-btns"></div>
+      <div id="fam-out" style="font-size:19px"></div>
+      <p class="cap">A rede recebe os dois primeiros termos e deve ativar a pessoa 2. O exemplo de Colin vem da Figura 3 do artigo.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 14 · Familias: la red -->
+<section class="slide">
+  <header class="sh"><span class="kick">2 · O artigo · experimento 2 (Figuras 3 e 4)</span><h2><span class="snum">2</span>O que as unidades ocultas aprenderam</h2></header>
+  <div class="cards" style="grid-template-columns: 360px 1fr; align-items:start">
+    <div class="net-stack">
+      <div class="lay">Saída: pessoa 2 <small>(24)</small></div><div class="dn">↑</div>
+      <div class="lay hid">Penúltima <small>(6)</small></div><div class="dn">↑</div>
+      <div class="lay hid">Central <small>(12)</small></div><div class="dn">↑</div>
+      <div class="row"><div class="lay hid">Pessoa 1 codificada <small>(6)</small></div><div class="lay hid">Relação codificada <small>(6)</small></div></div><div class="dn">↑ &nbsp; ↑</div>
+      <div class="row"><div class="lay">Pessoa 1 <small>(24)</small></div><div class="lay">Relação <small>(12)</small></div></div>
+      <p class="cap" style="margin-top:6px">Rede de 5 camadas. Cada pessoa é <b>uma unidade</b> de entrada: nada nela diz “inglês” ou “avô”.</p>
+    </div>
+    <div>
+      <table class="tbl">
+        <tr><th>Unidade (das 6 da pessoa 1)</th><th>O que passou a representar</th></tr>
+        <tr><td><b>Unidade 1</b></td><td>inglês × italiano</td></tr>
+        <tr><td><b>Unidade 2</b></td><td>a <b>geração</b> da pessoa</td></tr>
+        <tr><td><b>Unidade 6</b></td><td>o <b>ramo</b> da família</td></tr>
+      </table>
+      <div class="card2 f"><b>Resultado</b>Há 104 frases possíveis. Treinaram com <strong>100</strong> e testaram nas <strong>4</strong> que a rede nunca viu: <strong>acertou as 4</strong>. Como inglês e italiano ficam quase iguais por dentro, o que aprende numa árvore serve para a outra.</div>
+      <p class="cap">Treino: 1.500 varreduras (ε = 0,005 e α = 0,5 nas 20 primeiras; depois ε = 0,01 e α = 0,9), com <i>weight decay</i> de 0,2% para os pesos ficarem mais fáceis de ler.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 15 · Recurrentes y límites -->
+<section class="slide">
+  <header class="sh"><span class="kick">2 · O artigo · Figura 5 e limites</span><h2><span class="snum">2</span>Redes recorrentes e o que os próprios autores admitem</h2></header>
+  <div class="cards c3">
+    <div class="card2"><b>Redes que repetem (Fig. 5)</b>Uma rede que roda 3 vezes seguidas equivale a uma rede de 3 camadas com <strong>os mesmos pesos</strong> em todas. Dá para treiná-la igual, guardando o histórico e fazendo a média dos ajustes.<small>Essa ideia hoje se chama <i>backpropagation through time</i>.</small></div>
+    <div class="card2 b"><b>Mínimos locais</b>A descida pode parar num vale que não é o mais fundo. Mas, na prática, “<i>the network very rarely gets stuck in poor local minima</i>”. Acrescentar conexões cria caminhos para sair deles.</div>
+    <div class="card2 b"><b>Não é o cérebro</b>“<i>The learning procedure, in its current form, is not a plausible model of learning in brains.</i>” Mesmo assim, mostra que dá para construir representações internas descendo o gradiente.</div>
+  </div>
+  <div class="note">E uma honestidade no texto: “<i>Variants on the learning procedure have been discovered independently by <b>David Parker</b> […] and by <b>Yann Le Cun</b>.</i>” (p. 535)</div>
+</section>
+
+<!-- 16 · Después: línea de tiempo -->
+<section class="slide">
+  <header class="sh"><span class="kick">3 · O que veio depois</span><h2><span class="snum">3</span>De 1986 até hoje</h2></header>
+  <div class="anim">
+    <div class="a-left"><div class="ecchips" id="after-chips"></div><svg id="after-svg" viewBox="0 0 600 340" role="img" aria-label="Linha do tempo 1986 até hoje"></svg></div>
+    <div class="a-right"><div class="ectext" id="after-text" aria-live="polite"></div>
+      <div class="ecctrl"><button type="button" id="after-prev">◀</button><button type="button" id="after-play">▶ Reproduzir tudo</button><button type="button" id="after-next">▶</button></div></div>
+  </div>
+</section>
+
+<!-- 17 · ¿Quién inventó? -->
+<section class="slide">
+  <header class="sh"><span class="kick">3 · O que veio depois</span><h2><span class="snum">3</span>Quem inventou o backpropagation?</h2></header>
+  <table class="tbl">
+    <tr><th>Ano</th><th>Quem</th><th>O que fez</th></tr>
+    <tr><td>1970</td><td>Seppo Linnainmaa</td><td>Calcular derivadas “de trás para frente” em qualquer cálculo (diferenciação automática, modo reverso). Não fala de redes neurais.</td></tr>
+    <tr><td>1974</td><td>Paul Werbos</td><td>Tese em Harvard: propõe usar isso para treinar redes. Teve pouca repercussão.</td></tr>
+    <tr><td>1985</td><td>David Parker · Yann Le Cun</td><td>Chegam a variantes de forma independente (o próprio artigo cita os dois).</td></tr>
+    <tr class="hl"><td>1986</td><td>Rumelhart, Hinton, Williams</td><td>Mostram que funciona e que as camadas ocultas <b>aprendem representações úteis</b>. Publicam na <i>Nature</i>, e o método se espalha.</td></tr>
+  </table>
+  <div class="note">O artigo de 1986 não foi o primeiro a ter a ideia. Foi o que <strong>convenceu a comunidade</strong>: experimentos claros, uma revista lida por todos e a ligação com as representações internas.</div>
+</section>
+
+<!-- 18 · Hoy en código -->
+<section class="slide">
+  <header class="sh"><span class="kick">3 · O que veio depois</span><h2><span class="snum">3</span>Hoje: as mesmas equações, em quatro linhas</h2></header>
+  <pre class="code"><span class="c"># PyTorch: um passo de treinamento</span>
+y = rede(x)                    <span class="c"># passo para frente        (Eq. 1–2)</span>
+E = ((y - d) ** 2).sum() / 2   <span class="c"># erro                     (Eq. 3)</span>
+E.<span class="k">backward</span>()                   <span class="c"># passo para trás          (Eq. 4–7)</span>
+otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq. 8–9)</span></pre>
+  <table class="tbl">
+    <tr><th>Rede</th><th>Pesos</th></tr>
+    <tr><td>Simetria (Figura 1, 1986)</td><td>14 pesos + 3 bias</td></tr>
+    <tr><td>Árvores genealógicas (Figura 3, 1986)</td><td>576 pesos (sem contar os bias)</td></tr>
+    <tr><td>GPT-3 (2020)</td><td>175 bilhões de parâmetros</td></tr>
+  </table>
+  <p class="cap">Hoje ninguém escreve as Eq. 4–7 à mão: as bibliotecas fazem a regra da cadeia sozinhas (diferenciação automática). Mas a ideia é a mesma.</p>
+</section>
+
+<!-- 19 · Resumen -->
+<section class="slide">
+  <header class="sh"><h2>Para levar</h2></header>
+  <div class="summary">Em 1969 sabia-se que redes de uma camada tinham limites, mas <strong>ninguém sabia treinar as camadas do meio</strong>. Em 1986, Rumelhart, Hinton e Williams mostraram como: medir o erro na saída, <strong>passar a culpa para trás com a regra da cadeia</strong> e descer a ladeira do erro. As camadas do meio passaram a <strong>inventar suas próprias representações</strong>. É o mesmo procedimento que treina as redes de hoje.</div>
+</section>
+
+<!-- 20 · Obrigado -->
+<section class="slide title-slide">
+  <h1>Obrigado!</h1>
+  <p class="t-sub">Perguntas?</p>
+  <p class="t-ref">D. E. Rumelhart, G. E. Hinton, R. J. Williams. <i>Learning representations by back-propagating errors.</i> Nature 323, 533–536 (1986). doi:10.1038/323533a0</p>
+</section>
+
+<!-- ===== Apêndice (oculto: tecla A) ===== -->
+<section class="slide appendix">
+  <header class="sh"><span class="kick">Apêndice · passo para trás</span><h2><span class="snum">2</span>As Eq. 4–7: a regra da cadeia, camada por camada</h2></header>
+  <div class="eqgrid">
+    <div class="eq"><div class="eqrow"><math><mrow><mfrac><mrow><mo>∂</mo><mi>E</mi></mrow><mrow><mo>∂</mo><msub><mi>y</mi><mi>j</mi></msub></mrow></mfrac><mo>=</mo><msub><mi>y</mi><mi>j</mi></msub><mo>−</mo><msub><mi>d</mi><mi>j</mi></msub></mrow></math><span class="eqnum">(4)</span></div>
+      <p>Na saída: quanto o erro muda se a saída muda. É só “o que deu − o desejado”.</p></div>
+    <div class="eq"><div class="eqrow"><math><mrow><mfrac><mrow><mo>∂</mo><mi>E</mi></mrow><mrow><mo>∂</mo><msub><mi>x</mi><mi>j</mi></msub></mrow></mfrac><mo>=</mo><mfrac><mrow><mo>∂</mo><mi>E</mi></mrow><mrow><mo>∂</mo><msub><mi>y</mi><mi>j</mi></msub></mrow></mfrac><mo>·</mo><msub><mi>y</mi><mi>j</mi></msub><mo stretchy="false">(</mo><mn>1</mn><mo>−</mo><msub><mi>y</mi><mi>j</mi></msub><mo stretchy="false">)</mo></mrow></math><span class="eqnum">(5)</span></div>
+      <p>Atravessa a sigmoide. A derivada dela é <i>y</i>(1 − <i>y</i>), fácil de calcular.</p></div>
+    <div class="eq"><div class="eqrow"><math><mrow><mfrac><mrow><mo>∂</mo><mi>E</mi></mrow><mrow><mo>∂</mo><msub><mi>w</mi><mrow><mi>j</mi><mi>i</mi></mrow></msub></mrow></mfrac><mo>=</mo><mfrac><mrow><mo>∂</mo><mi>E</mi></mrow><mrow><mo>∂</mo><msub><mi>x</mi><mi>j</mi></msub></mrow></mfrac><mo>·</mo><msub><mi>y</mi><mi>i</mi></msub></mrow></math><span class="eqnum">(6)</span></div>
+      <p>Culpa de um peso = culpa da unidade de cima × quanto passou pelo peso. Se <i>y<sub>i</sub></i> = 0, o peso não teve culpa.</p></div>
+    <div class="eq"><div class="eqrow"><math><mrow><mfrac><mrow><mo>∂</mo><mi>E</mi></mrow><mrow><mo>∂</mo><msub><mi>y</mi><mi>i</mi></msub></mrow></mfrac><mo>=</mo><munder><mo>∑</mo><mi>j</mi></munder><mfrac><mrow><mo>∂</mo><mi>E</mi></mrow><mrow><mo>∂</mo><msub><mi>x</mi><mi>j</mi></msub></mrow></mfrac><mo>·</mo><msub><mi>w</mi><mrow><mi>j</mi><mi>i</mi></mrow></msub></mrow></math><span class="eqnum">(7)</span></div>
+      <p>A culpa <b>desce</b> para a camada de baixo, pelos mesmos pesos, e soma tudo o que chega. Depois repete (5)–(7) camada por camada.</p></div>
+  </div>
+  <p class="cap">Notação do artigo: <i>x</i> = entrada total de uma unidade, <i>y</i> = sua saída, <i>d</i> = saída desejada, <i>w<sub>ji</sub></i> = peso de <i>i</i> para <i>j</i>.</p>
+</section>
+
+<section class="slide appendix">
+  <header class="sh"><span class="kick">Apêndice · atualizar os pesos</span><h2><span class="snum">2</span>As Eq. 8 e 9: taxa de aprendizado e momento</h2></header>
+  <div class="eqgrid">
+    <div class="eq big"><div class="eqrow"><math><mrow><mi>Δ</mi><mi>w</mi><mo>=</mo><mo>−</mo><mi>ε</mi><mspace width="0.15em"/><mfrac><mrow><mo>∂</mo><mi>E</mi></mrow><mrow><mo>∂</mo><mi>w</mi></mrow></mfrac></mrow></math><span class="eqnum">(8)</span></div>
+      <p>Mudar cada peso <b>contra</b> a inclinação, um passo de tamanho ε. É a descida do gradiente mais simples.</p></div>
+    <div class="eq big"><div class="eqrow"><math><mrow><mi>Δ</mi><mi>w</mi><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>=</mo><mo>−</mo><mi>ε</mi><mspace width="0.15em"/><mfrac><mrow><mo>∂</mo><mi>E</mi></mrow><mrow><mo>∂</mo><mi>w</mi><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo></mrow></mfrac><mo>+</mo><mi>α</mi><mspace width="0.15em"/><mi>Δ</mi><mi>w</mi><mo stretchy="false">(</mo><mi>t</mi><mo>−</mo><mn>1</mn><mo stretchy="false">)</mo></mrow></math><span class="eqnum">(9)</span></div>
+      <p>Somar uma parte (α, entre 0 e 1) do passo anterior. O gradiente passa a mudar a <b>velocidade</b> e não a posição: é o <b>momento</b>.</p></div>
+  </div>
+  <table class="tbl">
+    <tr><th>Experimento</th><th>ε</th><th>α</th><th>Varreduras</th><th>Pesos iniciais</th></tr>
+    <tr><td>Simetria (Fig. 1)</td><td>0,1</td><td>0,9</td><td>1.425</td><td>aleatórios entre −0,3 e 0,3</td></tr>
+    <tr><td>Famílias (Fig. 3–4)</td><td>0,005 → 0,01</td><td>0,5 → 0,9</td><td>1.500</td><td>pequenos e aleatórios (para quebrar a simetria)</td></tr>
+  </table>
+  <p class="cap">O artigo acumula ∂E/∂w de todos os exemplos antes de mudar os pesos (uma “varredura”). Também cita a alternativa: mudar depois de cada exemplo, sem precisar de memória extra.</p>
+</section>
+
+
+<div class="hud"><button type="button" id="hud-prev" aria-label="Anterior">◀</button><span id="hud-n">1 / 1</span><button type="button" id="hud-next" aria-label="Próximo">▶</button></div>
+<script>
+  // Registro de animaciones para la navegación de las diapositivas
+  const ANIMS = new Map();
+  const REG = (svg, api) => ANIMS.set(svg, api);
+  const NS = "http://www.w3.org/2000/svg";
+  const ACC = "var(--accent)", FWD = "var(--fwd)", BWD = "var(--bwd)", MUT = "var(--muted)", LINE = "var(--line)", INK = "var(--ink)";
+  const sig = x => 1 / (1 + Math.exp(-x));
+  const f2 = (v, n = 2) => (v < 0 ? "−" : "") + Math.abs(v).toFixed(n).replace(".", ",");
+  const fs = (v, n = 3) => (v > 0 ? "+" : "") + f2(v, n);
+
+  function helpers(svg, timers) {
+    const el = (tag, attrs = {}, parent = svg) => {
+      const e = document.createElementNS(NS, tag);
+      for (const k in attrs) e.setAttribute(k, attrs[k]);
+      parent.appendChild(e); return e;
+    };
+    const txt = (x, y, s, attrs = {}, parent = svg) => { const t = el("text", { x, y, ...attrs }, parent); t.textContent = s; return t; };
+    const fade = (node, delay) => {
+      node.style.opacity = 0;
+      timers.push(setTimeout(() => { node.style.transition = "opacity .5s"; node.style.opacity = 1; }, delay));
+      return node;
+    };
+    const later = (ms, fn) => timers.push(setTimeout(fn, ms));
+    return { el, txt, fade, later };
+  }
+
+  // Animación paso a paso genérica: chips + texto + SVG + botones ◀ ▶
+  function stepper(key, stages) {
+    const svg = document.getElementById(key + "-svg");
+    if (!svg) return;
+    const textBox = document.getElementById(key + "-text");
+    const chipsBox = document.getElementById(key + "-chips");
+    const playBtn = document.getElementById(key + "-play");
+    let timers = [], cur = 0, playTimer = null;
+    const chips = stages.map((st, i) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.textContent = `${i + 1}. ${st.name}`;
+      b.addEventListener("click", () => { stop(); show(i); });
+      chipsBox.appendChild(b); return b;
+    });
+    function show(i) {
+      cur = i;
+      timers.forEach(clearTimeout); timers = [];
+      svg.innerHTML = "";
+      stages[i].draw(helpers(svg, timers));
+      textBox.innerHTML = stages[i].text;
+      chips.forEach((b, j) => { b.classList.toggle("on", j === i); b.classList.toggle("done", j < i); });
+    }
+    function stop() { clearTimeout(playTimer); playTimer = null; playBtn.textContent = "▶ Reproduzir tudo"; }
+    function playFrom(i) {
+      show(i);
+      playTimer = setTimeout(() => (i < stages.length - 1 ? playFrom(i + 1) : stop()), stages[i].dur || 6000);
+    }
+    playBtn.addEventListener("click", () => {
+      if (playTimer) { stop(); return; }
+      playBtn.textContent = "⏸ Pausar";
+      playFrom(cur === stages.length - 1 ? 0 : cur);
+    });
+    document.getElementById(key + "-prev").addEventListener("click", () => { stop(); show(Math.max(0, cur - 1)); });
+    document.getElementById(key + "-next").addEventListener("click", () => { stop(); show(Math.min(stages.length - 1, cur + 1)); });
+    REG(svg, { n: () => stages.length, cur: () => cur, go: i => { stop(); show(i); }, stop: () => stop() });
+    show(0);
+  }
+
+  // ---- Línea de tiempo genérica ----
+  function timeline(key, y0, y1, events, stages) {
+    const X = y => 40 + (y - y0) / (y1 - y0) * 520, AY = 250;
+    stepper(key, stages.map((st, si) => ({
+      name: st.name, text: st.text, dur: st.dur || 6500,
+      draw({ el, txt, fade }) {
+        if (st.band) {
+          const [a, b, label] = st.band;
+          el("rect", { x: X(a), y: AY - 40, width: X(b) - X(a), height: 40, fill: "var(--bwd-soft)" });
+          txt((X(a) + X(b)) / 2, AY - 46, label, { "text-anchor": "middle", style: "font-size:12px;fill:var(--bwd)" });
+        }
+        el("line", { x1: 30, y1: AY, x2: 570, y2: AY, stroke: LINE, "stroke-width": 3 });
+        for (let y = Math.ceil(y0 / 10) * 10; y <= y1; y += 10) {
+          el("line", { x1: X(y), y1: AY - 5, x2: X(y), y2: AY + 5, stroke: LINE, "stroke-width": 2 });
+          txt(X(y), AY + 62, String(y), { "text-anchor": "middle", style: "font-size:11px" });
+        }
+        const seen = new Set(stages.slice(0, si + 1).flatMap(s => s.on));
+        events.forEach((ev, i) => {
+          if (!seen.has(i)) return;
+          const on = st.on.includes(i);
+          el("circle", { cx: X(ev.y), cy: AY, r: on ? 9 : 6, fill: on ? ACC : "var(--card)", stroke: on ? ACC : MUT, "stroke-width": 2 });
+          txt(X(ev.y), AY + 22 + (ev.row || 0) * 15, String(ev.y), { "text-anchor": "middle", style: `font-size:12px;font-weight:${on ? 700 : 400};fill:${on ? "var(--accent)" : "var(--muted)"}` });
+        });
+        // tarjeta superior
+        const g = el("g", {});
+        el("rect", { x: 40, y: 18, width: 520, height: st.band ? 160 : 175, rx: 12, fill: "var(--accent-soft)" }, g);
+        txt(300, 62, st.year, { "text-anchor": "middle", style: "font-size:40px;font-weight:800;fill:var(--accent)" }, g);
+        st.lines.forEach((l, k) => txt(300, 96 + k * 22, l, { "text-anchor": "middle", style: k === 0 ? "font-size:19px;font-weight:700;fill:var(--ink)" : "font-size:15px" }, g));
+        fade(g, 80);
+      }
+    })));
+  }
+
+  // ===== Slide 3: 1943–1986 =====
+  timeline("hist", 1940, 1990, [
+    { y: 1943 }, { y: 1949 }, { y: 1950, row: 1 }, { y: 1958 }, { y: 1969 }, { y: 1970, row: 1 }, { y: 1974, row: 2 }, { y: 1982 }, { y: 1985, row: 1 }, { y: 1986, row: 2 }
+  ], [
+    { name: "1943", on: [0], year: "1943", lines: ["McCulloch e Pitts", "um neurônio vira uma conta: soma as entradas", "e “dispara” (1) se passar de um limite"],
+      text: "Warren <b>McCulloch</b> (neurocientista) e Walter <b>Pitts</b> (lógico) propõem o <b>neurônio artificial</b>: recebe sinais, soma e dispara se a soma passa de um limite. Com eles dá para montar portas lógicas. Mas os pesos são fixos: <b>ninguém aprende nada</b>." },
+    { name: "1949", on: [1], year: "1949", lines: ["Donald Hebb", "aprender = mudar a força das conexões"],
+      text: "O psicólogo Donald <b>Hebb</b> sugere que o cérebro aprende <b>reforçando conexões</b> entre neurônios que se ativam juntos. A ideia central de todo o resto: <b>aprender é ajustar pesos</b>." },
+    { name: "1950", on: [2], year: "1950", lines: ["Turing", "“Computing Machinery and Intelligence”", "§7: máquinas que aprendem, como uma criança"],
+      text: "O texto de <b>Turing</b> que já lemos na disciplina. Na seção 7 (<i>Learning Machines</i>) ele propõe não programar a mente adulta, mas uma <b>máquina-criança que aprende</b> com recompensas e punições." },
+    { name: "1958", on: [3], year: "1958", lines: ["Rosenblatt: o perceptron", "a primeira rede que aprende seus pesos sozinha", "(mas só uma camada aprende)"],
+      text: "Frank <b>Rosenblatt</b> cria o <b>perceptron</b>: uma rede que ajusta seus pesos a partir de exemplos, com uma regra simples e uma prova de que converge. Gera muita expectativa. Limite: <b>só a última camada aprende</b>; as do meio são fixas, feitas à mão." },
+    { name: "1969", on: [4], year: "1969", lines: ["Minsky e Papert, “Perceptrons”", "provam o que uma camada NÃO consegue fazer", "o interesse por redes neurais cai"],
+      text: "Marvin <b>Minsky</b> e Seymour <b>Papert</b> publicam o livro <i>Perceptrons</i>. Mostram com matemática tarefas que um perceptron de uma camada <b>não consegue</b> aprender (o XOR é o exemplo mais simples). Redes de várias camadas resolveriam, mas <b>ninguém sabia treiná-las</b>. O dinheiro e o interesse migram para outras áreas da IA." },
+    { name: "1970–1985", on: [5, 6, 7, 8], band: [1969, 1986, "poucos trabalham com redes neurais"], year: "1970–1985", lines: ["peças soltas", "Linnainmaa 1970 · Werbos 1974 · Hopfield 1982", "máquina de Boltzmann 1985 · Parker e Le Cun 1985"],
+      text: "Poucos continuam. Aparecem <b>peças</b>: Linnainmaa (1970) calcula derivadas de trás para frente; Werbos (1974) sugere usar isso em redes; Hopfield (1982) e a máquina de Boltzmann (1985, com Hinton) trazem físicos e psicólogos de volta. Parker e Le Cun (1985) chegam a variantes do backprop." },
+    { name: "1986", on: [9], year: "1986", lines: ["Rumelhart, Hinton e Williams", "Nature + o livro “Parallel Distributed Processing”", "as redes neurais voltam"],
+      text: "O grupo <b>PDP</b> (San Diego) publica os dois volumes de <i>Parallel Distributed Processing</i>, e o artigo sai na <b>Nature</b>. Pela primeira vez fica claro e convincente <b>como treinar as camadas do meio</b>. É o início da volta das redes neurais." }
+  ]);
+
+  // ===== Slide 4: perceptrón, AND, OR, XOR =====
+  (function () {
+    const O = [135, 285], S = 190; // origen y escala del plano
+    const P = (a, b) => [O[0] + S * a, O[1] - S * b];
+    function plane(h, labels, lines, verdict, vColor, under) {
+      const { el, txt, fade } = h;
+      el("rect", { x: P(-0.2, 1.2)[0], y: P(-0.2, 1.2)[1], width: S * 1.4, height: S * 1.4, fill: "var(--bg)", rx: 8 });
+      if (under) under();
+      el("line", { x1: P(-0.2, 0)[0], y1: O[1], x2: P(1.2, 0)[0], y2: O[1], stroke: LINE });
+      el("line", { x1: O[0], y1: P(0, -0.2)[1], x2: O[0], y2: P(0, 1.2)[1], stroke: LINE });
+      lines.forEach(([a, b, c, d, col, dash], k) => {
+        const l = el("line", { x1: P(a, b)[0], y1: P(a, b)[1], x2: P(c, d)[0], y2: P(c, d)[1], stroke: col || ACC, "stroke-width": 3, "stroke-dasharray": dash || "none" });
+        fade(l, 300 + k * 500);
+      });
+      [[0, 0], [0, 1], [1, 0], [1, 1]].forEach(([a, b], k) => {
+        const [cx, cy] = P(a, b), on = labels[k];
+        el("circle", { cx, cy, r: 13, fill: on ? INK : "var(--card)", stroke: INK, "stroke-width": 2 });
+        txt(cx, cy + 5, on ? "1" : "0", { "text-anchor": "middle", style: `font-weight:700;fill:${on ? "var(--card)" : "var(--ink)"}` });
+        txt(cx + (a ? 18 : -18), cy + (b ? -16 : 28), `(${a},${b})`, { "text-anchor": a ? "start" : "end", style: "font-size:12px" });
+      });
+      verdict.forEach((v, k) => fade(txt(475, 120 + k * 26, v, { "text-anchor": "middle", style: `font-size:${k ? 15 : 20}px;font-weight:${k ? 400 : 700};fill:${k ? "var(--muted)" : vColor}` }), 900 + k * 150));
+    }
+    stepper("xorp", [
+      { name: "Perceptron", dur: 6500,
+        text: "Um perceptron recebe entradas <b>x₁, x₂</b>, multiplica cada uma por um <b>peso</b>, soma, e responde <b>1</b> se a soma passar de zero (função degrau). Aprender = ajustar os pesos até as respostas ficarem certas.",
+        draw({ el, txt, fade }) {
+          const node = (x, y, r, label, fill) => { el("circle", { cx: x, cy: y, r, fill: fill || "var(--card)", stroke: INK, "stroke-width": 2 }); txt(x, y + 6, label, { "text-anchor": "middle", style: "font-size:18px;font-weight:700;fill:var(--ink)" }); };
+          el("line", { x1: 120, y1: 110, x2: 300, y2: 170, stroke: ACC, "stroke-width": 3 });
+          el("line", { x1: 120, y1: 230, x2: 300, y2: 170, stroke: ACC, "stroke-width": 3 });
+          el("line", { x1: 336, y1: 170, x2: 400, y2: 170, stroke: INK, "stroke-width": 2 });
+          el("line", { x1: 470, y1: 170, x2: 520, y2: 170, stroke: INK, "stroke-width": 2 });
+          node(100, 110, 22, "x₁"); node(100, 230, 22, "x₂"); node(318, 170, 30, "Σ", "var(--accent-soft)");
+          txt(205, 128, "w₁", { style: "font-size:17px;fill:var(--accent);font-weight:700" });
+          txt(205, 225, "w₂", { style: "font-size:17px;fill:var(--accent);font-weight:700" });
+          el("rect", { x: 400, y: 140, width: 70, height: 60, rx: 8, fill: "var(--card)", stroke: INK, "stroke-width": 2 });
+          el("path", { d: "M410 188 H435 V152 H460", fill: "none", stroke: BWD, "stroke-width": 3 });
+          txt(435, 218, "degrau", { "text-anchor": "middle", style: "font-size:12px" });
+          txt(545, 176, "0/1", { "text-anchor": "middle", style: "font-size:18px;font-weight:700;fill:var(--ink)" });
+          fade(txt(300, 300, "y = 1  se  w₁x₁ + w₂x₂ + b > 0", { "text-anchor": "middle", style: "font-size:20px;fill:var(--ink)" }), 500);
+        } },
+      { name: "AND", dur: 5000,
+        text: "Desenhando as 4 entradas possíveis num plano, a regra do perceptron é uma <b>reta</b>: de um lado responde 1, do outro 0. Para o <b>AND</b> (1 só se as duas forem 1) existe uma reta que separa. ✓",
+        draw(h) { plane(h, [0, 0, 0, 1], [[0.3, 1.2, 1.2, 0.3]], ["AND ✓", "uma reta separa"], "var(--fwd)"); } },
+      { name: "OR", dur: 5000,
+        text: "Para o <b>OR</b> (1 se qualquer uma for 1) também existe uma reta. ✓ O perceptron aprende os dois.",
+        draw(h) { plane(h, [0, 1, 1, 1], [[-0.2, 0.7, 0.7, -0.2]], ["OR ✓", "uma reta separa"], "var(--fwd)"); } },
+      { name: "XOR", dur: 7000,
+        text: "No <b>XOR</b> (1 se forem <i>diferentes</i>) os 1 ficam em cantos opostos. <b>Nenhuma reta</b> deixa os dois 1 de um lado e os dois 0 do outro. Um perceptron de uma camada <b>nunca</b> aprende o XOR, não importa quanto treine.",
+        draw(h) { plane(h, [0, 1, 1, 0], [[-0.2, 0.7, 0.7, -0.2, BWD, "6 4"], [0.3, 1.2, 1.2, 0.3, BWD, "6 4"], [0.5, -0.2, 0.5, 1.2, BWD, "6 4"], [-0.2, 0.2, 1.2, 0.9, BWD, "6 4"]], ["XOR ✗", "nenhuma reta separa"], "var(--bwd)"); } },
+      { name: "Com camada oculta", dur: 8000,
+        text: "Com <b>duas</b> unidades no meio dá certo: uma faz OR, outra faz AND, e a saída responde “OR e não AND”. A faixa entre as duas retas é o XOR. ✓ <br><br>Mas aqui <b>nós</b> escolhemos esses pesos. O problema de 1969 era: <b>como a rede descobre isso sozinha?</b>",
+        draw(h) {
+          plane(h, [0, 1, 1, 0], [[-0.2, 0.7, 0.7, -0.2, FWD], [0.3, 1.2, 1.2, 0.3, FWD]], ["XOR ✓", "duas retas = duas", "unidades ocultas", "(pesos escolhidos à mão)"], "var(--fwd)",
+            () => h.el("polygon", { points: [P(-0.2, 0.7), P(0.7, -0.2), P(1.2, -0.2), P(1.2, 0.3), P(0.3, 1.2), P(-0.2, 1.2)].map(p => p.join(",")).join(" "), fill: "var(--fwd-soft)" }));
+        } }
+    ]);
+  })();
+
+  // ===== Slide 7: escalón vs sigmoide =====
+  (function () {
+    const svg = document.getElementById("sig-svg");
+    const h = helpers(svg, []);
+    const X = x => 60 + (x + 6) / 12 * 420, Y = y => 160 - y * 125;
+    h.el("line", { x1: X(-6), y1: Y(0), x2: X(6), y2: Y(0), stroke: LINE });
+    h.el("line", { x1: X(0), y1: Y(-0.05), x2: X(0), y2: Y(1.08), stroke: LINE });
+    h.txt(X(0) - 6, Y(1) + 4, "1", { "text-anchor": "end", style: "font-size:12px" });
+    h.txt(X(6), Y(0) + 18, "x", { "text-anchor": "end", style: "font-size:13px" });
+    h.el("path", { d: `M${X(-6)} ${Y(0)} H${X(0)} V${Y(1)} H${X(6)}`, fill: "none", stroke: BWD, "stroke-width": 3, "stroke-dasharray": "6 4" });
+    let d = "";
+    for (let x = -6; x <= 6.001; x += 0.1) d += (d ? "L" : "M") + X(x).toFixed(1) + " " + Y(sig(x)).toFixed(1);
+    h.el("path", { d, fill: "none", stroke: ACC, "stroke-width": 3.5 });
+    h.txt(X(-5.6), Y(0.85), "degrau (perceptron)", { style: "font-size:13px;fill:var(--bwd);font-weight:600" });
+    h.txt(X(-5.6), Y(0.68), "inclinação 0 ou infinita", { style: "font-size:12px" });
+    h.txt(X(1.4), Y(0.3), "sigmoide (Eq. 2)", { style: "font-size:13px;fill:var(--accent);font-weight:600" });
+    h.txt(X(1.4), Y(0.15), "suave: dá para derivar", { style: "font-size:12px" });
+  })();
+
+  // ===== Slide 8: ejemplo numérico =====
+  (function () {
+    // Pesos inventados. Entrada (1, 0), salida deseada d = 1, ε = 0,5
+    const W = { a: 0.5, b: -0.4, b1: 0.1, c: 0.3, e: 0.8, b2: -0.2, u: 0.7, v: -0.6, bo: 0.2 };
+    const x1 = 1, x2 = 0, d = 1, eps = 0.5;
+    const n1 = W.a * x1 + W.b * x2 + W.b1, n2 = W.c * x1 + W.e * x2 + W.b2;
+    const h1 = sig(n1), h2 = sig(n2);
+    const no = W.u * h1 + W.v * h2 + W.bo, y = sig(no);
+    const E = 0.5 * (y - d) ** 2;
+    const dy = y - d, dxo = dy * y * (1 - y);
+    const gu = dxo * h1, gv = dxo * h2;
+    const dh1 = dxo * W.u, dh2 = dxo * W.v;
+    const dx1 = dh1 * h1 * (1 - h1), dx2 = dh2 * h2 * (1 - h2);
+    const N = { a: W.a - eps * dx1 * x1, c: W.c - eps * dx2 * x1, b1: W.b1 - eps * dx1, b2: W.b2 - eps * dx2, u: W.u - eps * gu, v: W.v - eps * gv, bo: W.bo - eps * dxo };
+    const y2 = sig(N.u * sig(N.a + N.b1) + N.v * sig(N.c + N.b2) + N.bo), E2 = 0.5 * (y2 - d) ** 2;
+
+    const P = { i1: [80, 110], i2: [80, 250], h1: [300, 110], h2: [300, 250], o: [510, 180] };
+    const EDGES = [["i1", "h1", "a", 0.62, -10], ["i2", "h1", "b", 0.72, -2], ["i1", "h2", "c", 0.72, 18], ["i2", "h2", "e", 0.62, 22], ["h1", "o", "u", 0.5, -12], ["h2", "o", "v", 0.5, 26]];
+    function base(h, o) {
+      const { el, txt } = h;
+      EDGES.forEach(([s, tg, k, f, dy]) => {
+        const [x1_, y1_] = P[s], [x2_, y2_] = P[tg];
+        const col = (o.edgeCol && o.edgeCol[k]) || LINE;
+        el("line", { x1: x1_, y1: y1_, x2: x2_, y2: y2_, stroke: col, "stroke-width": col === LINE ? 2 : 3.5 });
+        const lx = x1_ + (x2_ - x1_) * f, ly = y1_ + (y2_ - y1_) * f + dy;
+        const lab = (o.wlab && o.wlab[k]) || f2(W[k], 1);
+        const t = txt(lx, ly, lab, { "text-anchor": "middle", style: `font-size:${o.wlab && o.wlab[k] ? 13 : 15}px;font-weight:700;fill:${(o.wcol && o.wcol[k]) || "var(--ink)"}` });
+        t.setAttribute("paint-order", "stroke"); t.setAttribute("stroke", "var(--card)"); t.setAttribute("stroke-width", "5");
+      });
+      const node = (k, label, val, fill) => {
+        const [x, y] = P[k];
+        el("circle", { cx: x, cy: y, r: 28, fill: fill || "var(--card)", stroke: INK, "stroke-width": 2 });
+        txt(x, y + (val ? -4 : 6), label, { "text-anchor": "middle", style: `font-size:${val ? 12 : 17}px;font-weight:700;fill:var(--ink)` });
+        if (val) txt(x, y + 13, val, { "text-anchor": "middle", style: "font-size:15px;font-weight:700;fill:var(--ink)" });
+      };
+      node("i1", "x₁", "1"); node("i2", "x₂", "0");
+      node("h1", "h₁", o.h1, o.h1 ? "var(--fwd-soft)" : null); node("h2", "h₂", o.h2, o.h2 ? "var(--fwd-soft)" : null);
+      node("o", "y", o.y, o.y ? "var(--fwd-soft)" : null);
+      txt(300, 60, `bias ${f2(o.b1 != null ? o.b1 : W.b1, o.b1 != null ? 3 : 1)}`, { "text-anchor": "middle", style: "font-size:12px" });
+      txt(300, 300, `bias ${f2(o.b2 != null ? o.b2 : W.b2, o.b2 != null ? 3 : 1)}`, { "text-anchor": "middle", style: "font-size:12px" });
+      txt(510, 130, `bias ${f2(o.bo != null ? o.bo : W.bo, o.bo != null ? 3 : 1)}`, { "text-anchor": "middle", style: "font-size:12px" });
+      txt(565, 186, "d = 1", { "text-anchor": "middle", style: "font-size:15px;font-weight:700;fill:var(--accent)" });
+    }
+    const note = (h, x, y, lines, col, delay = 300) => {
+      const g = h.el("g", {});
+      lines.forEach((l, k) => h.txt(x, y + k * 17, l, { "text-anchor": "middle", style: `font-size:13.5px;font-weight:${k ? 400 : 700};fill:${col}` }, g));
+      h.fade(g, delay);
+    };
+    const fwd = { h1: f2(h1), h2: f2(h2), y: f2(y) };
+    stepper("num", [
+      { name: "A rede", dur: 6000,
+        text: "Uma rede mínima: 2 entradas, 2 unidades ocultas, 1 saída. Os números nas linhas são os <b>pesos</b>, inventados. Entrada <b>(1, 0)</b>; para o XOR, a resposta certa é <b>d = 1</b>.",
+        draw(h) { base(h, {}); } },
+      { name: "Para frente: ocultas", dur: 7000,
+        text: `<span class="fwd">Eq. 1</span>: cada oculta soma entradas × pesos + bias.<br>h₁: 1·0,5 + 0·(−0,4) + 0,1 = <b>0,60</b><br>h₂: 1·0,3 + 0·0,8 − 0,2 = <b>0,10</b><br><span class="fwd">Eq. 2</span>: a sigmoide aperta entre 0 e 1:<br>h₁ = σ(0,60) = <b>${f2(h1)}</b> · h₂ = σ(0,10) = <b>${f2(h2)}</b>`,
+        draw(h) { base(h, { h1: f2(h1), h2: f2(h2), edgeCol: { a: FWD, b: FWD, c: FWD, e: FWD } }); note(h, 300, 34, ["soma = 0,60"], FWD); note(h, 300, 330, ["soma = 0,10"], FWD); } },
+      { name: "Para frente: saída", dur: 6000,
+        text: `Mesma coisa na saída:<br>0,65·0,7 + 0,52·(−0,6) + 0,2 = <b>${f2(no)}</b><br>σ(${f2(no)}) = <b>${f2(y)}</b>.<br>A rede responde <b>${f2(y)}</b>, mas devia ser <b>1</b>.`,
+        draw(h) { base(h, { ...fwd, edgeCol: { u: FWD, v: FWD } }); note(h, 510, 240, [`soma = ${f2(no)}`], FWD); } },
+      { name: "Erro", dur: 6000,
+        text: `<span class="bwd">Eq. 3</span>: E = ½ (y − d)² = ½ (${f2(y)} − 1)² = <b>${f2(E, 3)}</b>.<br><br>Agora a pergunta: <b>quanto cada peso tem de culpa</b> por esse erro?`,
+        draw(h) { base(h, fwd); note(h, 510, 250, [`E = ½(${f2(y)} − 1)²`, `= ${f2(E, 3)}`], BWD); } },
+      { name: "Para trás: saída", dur: 7000,
+        text: `<span class="bwd">Eq. 4</span>: ∂E/∂y = y − d = <b>${f2(dy, 3)}</b><br>(negativo: a saída devia <b>subir</b>).<br><span class="bwd">Eq. 5</span>: atravessar a sigmoide multiplicando por y(1 − y):<br>∂E/∂x = ${f2(dy, 3)} · ${f2(y)} · ${f2(1 - y)} = <b>${f2(dxo, 3)}</b>`,
+        draw(h) { base(h, fwd); note(h, 510, 240, [`∂E/∂y = ${f2(dy, 3)}`, `∂E/∂x = ${f2(dxo, 3)}`], BWD); } },
+      { name: "Pesos da saída", dur: 7000,
+        text: `<span class="bwd">Eq. 6</span>: culpa de um peso = culpa da unidade de cima × o que passou pelo peso.<br>peso 0,7: ${f2(dxo, 3)} · ${f2(h1)} = <b>${f2(gu, 3)}</b><br>peso −0,6: ${f2(dxo, 3)} · ${f2(h2)} = <b>${f2(gv, 3)}</b>`,
+        draw(h) { base(h, { ...fwd, edgeCol: { u: BWD, v: BWD }, wcol: { u: "var(--bwd)", v: "var(--bwd)" }, wlab: { u: `∂E/∂w = ${f2(gu, 3)}`, v: `∂E/∂w = ${f2(gv, 3)}` } }); note(h, 510, 240, [`∂E/∂x = ${f2(dxo, 3)}`], BWD, 0); } },
+      { name: "A culpa desce", dur: 8000,
+        text: `<span class="bwd">Eq. 7</span>: a culpa desce pelos mesmos pesos:<br>h₁: ${f2(dxo, 3)} · 0,7 = <b>${f2(dh1, 3)}</b><br>h₂: ${f2(dxo, 3)} · (−0,6) = <b>${fs(dh2)}</b><br><span class="bwd">Eq. 5</span> de novo (sigmoide):<br>h₁: <b>${f2(dx1, 3)}</b> · h₂: <b>${fs(dx2)}</b><br>h₂ tem sinal contrário: o peso dela para a saída é negativo, então ela deve <b>descer</b>.`,
+        draw(h) { base(h, { ...fwd, edgeCol: { u: BWD, v: BWD } }); note(h, 300, 26, [`∂E/∂y = ${f2(dh1, 3)}`, `∂E/∂x = ${f2(dx1, 3)}`], BWD); note(h, 300, 318, [`∂E/∂y = ${fs(dh2)}`, `∂E/∂x = ${fs(dx2)}`], BWD, 600); } },
+      { name: "Atualizar", dur: 9000,
+        text: `<span class="fwd">Eq. 8</span>, com ε = 0,5: peso novo = peso − ε · ∂E/∂w.<br>0,7 → <b>${f2(N.u, 3)}</b> · −0,6 → <b>${f2(N.v, 3)}</b><br>0,5 → <b>${f2(N.a, 3)}</b> · 0,3 → <b>${f2(N.c, 3)}</b><br>Os pesos que saem de x₂ <b>não mudam</b>: x₂ = 0, não teve culpa.<br>Nova saída: <b>${f2(y2, 3)}</b> (era ${f2(y, 3)}). Erro: ${f2(E, 3)} → <b>${f2(E2, 3)}</b>. Repetindo muitas vezes, chega perto de 1.`,
+        draw(h) { base(h, { y: f2(y2), wcol: { a: "var(--fwd)", c: "var(--fwd)", u: "var(--fwd)", v: "var(--fwd)" }, wlab: { a: f2(N.a, 3), c: f2(N.c, 3), u: f2(N.u, 3), v: f2(N.v, 3) }, b1: N.b1, b2: N.b2, bo: N.bo }); note(h, 510, 240, [`E: ${f2(E, 3)} → ${f2(E2, 3)}`], FWD); } }
+    ]);
+  })();
+
+  // ===== Slide 9: descenso del gradiente =====
+  (function () {
+    const Ef = w => 0.012 * (w + 2.5) ** 2 * (w - 2.3) ** 2 - 0.12 * w + 1;
+    const G = w => (Ef(w + 1e-4) - Ef(w - 1e-4)) / 2e-4;
+    const X = w => 40 + (w + 4.2) / 8.4 * 520, Y = e => 305 - (e - 0.6) / 1.9 * 260;
+    function run(w, eps, alpha, n = 400) {
+      let v = 0; const path = [w];
+      for (let i = 0; i < n; i++) { v = -eps * G(w) + alpha * v; w += v; path.push(w); if (Math.abs(v) < 2e-3 && Math.abs(G(w)) < 2e-3) break; }
+      return path;
+    }
+    function curve({ el, txt }) {
+      let d = "";
+      for (let w = -4.05; w <= 4.05; w += 0.05) d += (d ? "L" : "M") + X(w).toFixed(1) + " " + Y(Ef(w)).toFixed(1);
+      el("path", { d, fill: "none", stroke: INK, "stroke-width": 2.5 });
+      txt(X(-2.25), Y(Ef(-2.25)) + 26, "mínimo local", { "text-anchor": "middle", style: "font-size:12px;fill:var(--bwd)" });
+      txt(X(2.49), Y(Ef(2.49)) + 26, "mínimo global", { "text-anchor": "middle", style: "font-size:12px;fill:var(--fwd)" });
+      txt(26, 30, "erro E", { style: "font-size:13px" });
+      txt(570, 330, "peso w", { "text-anchor": "end", style: "font-size:13px" });
+    }
+    function animate(h, path, label, col) {
+      const { el, txt, later } = h;
+      const ball = el("circle", { cx: X(path[0]), cy: Y(Ef(path[0])) - 9, r: 9, fill: col });
+      const info = txt(300, 30, "", { "text-anchor": "middle", style: `font-size:16px;font-weight:700;fill:${col}` });
+      const step = path.length > 60 ? 45 : 140;
+      path.forEach((w, i) => later(400 + i * step, () => {
+        const cx = X(Math.max(-4.1, Math.min(4.1, w))), cy = Y(Ef(Math.max(-4.1, Math.min(4.1, w)))) - 9;
+        if (i) el("circle", { cx, cy: cy + 9, r: 2.5, fill: col, opacity: 0.5 });
+        ball.setAttribute("cx", cx); ball.setAttribute("cy", cy);
+        info.textContent = `${label} · passo ${i} · E = ${f2(Ef(w), 3)}`;
+      }));
+    }
+    stepper("gd", [
+      { name: "Inclinação", dur: 6000,
+        text: "Imagine o erro como uma <b>paisagem</b>: cada valor do peso tem um erro. Com as Eq. 4–7 sabemos a <b>inclinação</b> ∂E/∂w no ponto onde estamos. Não vemos a paisagem inteira, só o chão sob os pés.",
+        draw(h) {
+          curve(h);
+          const w = 3.9, e = Ef(w), g = G(w);
+          h.el("line", { x1: X(w - 0.6), y1: Y(e - 0.6 * g), x2: X(w + 0.3), y2: Y(e + 0.3 * g), stroke: BWD, "stroke-width": 3 });
+          h.el("circle", { cx: X(w), cy: Y(e) - 9, r: 9, fill: ACC });
+          h.txt(X(w) - 20, Y(e) - 30, `inclinação = ${f2(g)}`, { "text-anchor": "end", style: "font-size:14px;font-weight:700;fill:var(--bwd)" });
+        } },
+      { name: "Descer (Eq. 8)", dur: 7500,
+        text: "<b>Eq. 8</b>: Δw = −ε · ∂E/∂w. Dar um passo <b>contra</b> a inclinação, de tamanho proporcional a ela. Com ε = 0,4 a bola desce e para no fundo do vale.",
+        draw(h) { curve(h); animate(h, run(3.9, 0.4, 0), "ε = 0,4", ACC); } },
+      { name: "ε grande demais", dur: 6000,
+        text: "Se o passo é <b>grande demais</b> (ε = 3,2), a bola salta por cima do vale e cai em outro lugar. Aqui foi parar no vale pior. Escolher ε é um compromisso entre velocidade e estabilidade.",
+        draw(h) { curve(h); animate(h, run(3.9, 3.2, 0, 10), "ε = 3,2", BWD); } },
+      { name: "Mínimo local", dur: 8500,
+        text: "Começando do outro lado, a bola para no <b>mínimo local</b>: um vale que não é o mais fundo. Ali a inclinação é zero e a Eq. 8 não manda sair. O artigo admite esse problema (p. 535).",
+        draw(h) { curve(h); animate(h, run(-3.9, 0.4, 0), "ε = 0,4", BWD); } },
+      { name: "Momento (Eq. 9)", dur: 10000,
+        text: "<b>Eq. 9</b>: Δw(t) = −ε ∂E/∂w + <b>α</b> Δw(t−1). Cada passo guarda parte do anterior, como uma bola com <b>embalo</b>. Com α = 0,8, do mesmo ponto de partida, ela passa por cima da lombada e chega ao vale mais fundo. O artigo usa o momento para <b>acelerar</b>; sair de um mínimo local, como aqui, nem sempre acontece.",
+        draw(h) { curve(h); animate(h, run(-3.9, 0.4, 0.8), "ε = 0,4 · α = 0,8", FWD); } }
+    ]);
+  })();
+
+  // ===== Slide 10: entrenar XOR en vivo =====
+  (function () {
+    const cv = document.getElementById("xor-canvas"); if (!cv) return;
+    const ctx = cv.getContext("2d");
+    const lossSvg = document.getElementById("xor-loss");
+    const runBtn = document.getElementById("xor-run"), resetBtn = document.getElementById("xor-reset");
+    const D = [[0, 0, 0], [0, 1, 1], [1, 0, 1], [1, 1, 0]];
+    const EPS = 0.5, ALPHA = 0.9, MAXT = 3000;
+    let seed = 1, W, dW, t, hist, raf = null;
+    function init() {
+      let s = seed; const r = () => ((s = (s * 16807) % 2147483647) / 2147483647) * 0.6 - 0.3;
+      W = Array.from({ length: 9 }, r); dW = W.map(() => 0); t = 0; hist = [];
+      document.getElementById("xor-seed").textContent = seed;
+      document.getElementById("xor-msg").innerHTML = "Aperte <b>Treinar</b>. Cada varredura aplica as Eq. 1–9 uma vez.";
+      hist.push(sweep(false)); draw();
+    }
+    const fwd = (a, b) => { const h1 = sig(W[0] * a + W[1] * b + W[2]), h2 = sig(W[3] * a + W[4] * b + W[5]); return [h1, h2, sig(W[6] * h1 + W[7] * h2 + W[8])]; };
+    function sweep(update = true) {
+      const g = W.map(() => 0); let E = 0;
+      for (const [a, b, d] of D) {
+        const [h1, h2, y] = fwd(a, b); E += 0.5 * (y - d) ** 2;
+        const dxo = (y - d) * y * (1 - y), d1 = dxo * W[6] * h1 * (1 - h1), d2 = dxo * W[7] * h2 * (1 - h2);
+        [d1 * a, d1 * b, d1, d2 * a, d2 * b, d2, dxo * h1, dxo * h2, dxo].forEach((v, i) => (g[i] += v));
+      }
+      if (update) { dW = dW.map((v, i) => -EPS * g[i] + ALPHA * v); W = W.map((v, i) => v + dW[i]); }
+      return E;
+    }
+    function draw() {
+      const n = 60, c = cv.width / n;
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+        const a = -0.25 + 1.5 * (i + 0.5) / n, b = 1.25 - 1.5 * (j + 0.5) / n, y = fwd(a, b)[2];
+        ctx.fillStyle = `rgb(${Math.round(247 - 188 * y)},${Math.round(246 - 155 * y)},${Math.round(242 - 23 * y)})`;
+        ctx.fillRect(i * c, j * c, c + 1, c + 1);
+      }
+      const P = (a, b) => [(a + 0.25) / 1.5 * cv.width, (1.25 - b) / 1.5 * cv.height];
+      ctx.strokeStyle = "rgba(0,0,0,.15)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(...P(0, -0.25)); ctx.lineTo(...P(0, 1.25)); ctx.moveTo(...P(-0.25, 0)); ctx.lineTo(...P(1.25, 0)); ctx.stroke();
+      for (const [a, b, d] of D) {
+        const [x, y] = P(a, b), out = fwd(a, b)[2];
+        ctx.beginPath(); ctx.arc(x, y, 18, 0, 7); ctx.fillStyle = d ? "#1d1d1f" : "#ffffff"; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = "#1d1d1f"; ctx.stroke();
+        ctx.fillStyle = d ? "#fff" : "#1d1d1f"; ctx.font = "bold 16px -apple-system, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(String(d), x, y);
+        ctx.fillStyle = "#1d1d1f"; ctx.font = "13px -apple-system, sans-serif"; ctx.fillText(`y = ${f2(out)}`, x, y + (b ? -30 : 30));
+      }
+      document.getElementById("xor-t").textContent = t;
+      document.getElementById("xor-e").textContent = f2(hist[hist.length - 1], 3);
+      // curva del error
+      lossSvg.innerHTML = "";
+      const h = helpers(lossSvg, []);
+      const tmax = Math.max(400, t), emax = 0.6;
+      const X = i => 50 + i / tmax * 530, Y = e => 200 - Math.min(e, emax) / emax * 175;
+      h.el("line", { x1: 50, y1: 200, x2: 580, y2: 200, stroke: LINE }); h.el("line", { x1: 50, y1: 20, x2: 50, y2: 200, stroke: LINE });
+      h.txt(44, Y(0.5) + 4, "0,5", { "text-anchor": "end", style: "font-size:12px" }); h.txt(44, 204, "0", { "text-anchor": "end", style: "font-size:12px" });
+      h.txt(580, 220, `varreduras (0 a ${tmax})`, { "text-anchor": "end", style: "font-size:12px" });
+      h.txt(58, 30, "erro E", { style: "font-size:12px" });
+      const step = Math.max(1, Math.floor(hist.length / 300));
+      let d = ""; for (let i = 0; i < hist.length; i += step) d += (d ? "L" : "M") + X(i).toFixed(1) + " " + Y(hist[i]).toFixed(1);
+      h.el("path", { d, fill: "none", stroke: ACC, "stroke-width": 2.5 });
+    }
+    function stop() { cancelAnimationFrame(raf); raf = null; runBtn.textContent = "▶ Treinar"; }
+    function frame() {
+      for (let k = 0; k < 3 && t < MAXT; k++) { hist.push(sweep()); t++; }
+      draw();
+      const E = hist[hist.length - 1];
+      if (E < 0.01) { stop(); document.getElementById("xor-msg").innerHTML = `✓ Aprendeu o XOR em <b>${t}</b> varreduras. As camadas ocultas acharam sozinhas as “duas retas”.`; return; }
+      if (t >= MAXT) { stop(); document.getElementById("xor-msg").innerHTML = `✗ Depois de ${MAXT} varreduras o erro parou em ${f2(E, 3)}: a rede <b>ficou presa</b>. É o problema dos mínimos locais de que o artigo fala. Tente outra semente.`; return; }
+      raf = requestAnimationFrame(frame);
+    }
+    runBtn.addEventListener("click", () => {
+      if (raf) { stop(); return; }
+      if (t >= MAXT || hist[hist.length - 1] < 0.01) init();
+      runBtn.textContent = "⏸ Pausar"; raf = requestAnimationFrame(frame);
+    });
+    resetBtn.addEventListener("click", () => { stop(); seed++; init(); });
+    init();
+    REG(lossSvg, { n: () => 1, cur: () => 0, go: () => {}, stop });
+  })();
+
+  // ===== Slide 11: simetría con los pesos reales de la Figura 1 =====
+  (function () {
+    const svg = document.getElementById("sym-svg"); if (!svg) return;
+    const L = [14.2, -3.6, 7.2, -7.2, 3.6, -14.2], R = [-14.2, 3.6, -7.1, 7.1, -3.6, 14.2];
+    const BH = -1.1, WO = -8.8, BO = 6.4;
+    let x = [1, 0, 1, 1, 0, 1];
+    const run = v => {
+      const h1 = sig(v.reduce((s, b, i) => s + b * L[i], 0) + BH), h2 = sig(v.reduce((s, b, i) => s + b * R[i], 0) + BH);
+      return { h1, h2, y: sig(BO + WO * h1 + WO * h2) };
+    };
+    const isSym = v => v.every((b, i) => b === v[5 - i]);
+    const IX = i => 105 + i * 78, IY = 262, H = [[200, 160], [400, 160]], OUT = [300, 52];
+    function draw() {
+      svg.innerHTML = "";
+      const { el, txt } = helpers(svg, []);
+      const r = run(x);
+      const wcol = w => (w > 0 ? FWD : BWD);
+      el("line", { x1: 300, y1: 20, x2: 300, y2: 290, stroke: LINE, "stroke-dasharray": "4 5" });
+      x.forEach((b, i) => [L, R].forEach((Wt, k) => {
+        el("line", { x1: IX(i), y1: IY - 22, x2: H[k][0], y2: H[k][1], stroke: wcol(Wt[i]), "stroke-width": Math.abs(Wt[i]) / 3.2, opacity: b ? 0.9 : 0.2 });
+      }));
+      // pesos debajo de cada entrada: fila h₁ y fila h₂
+      txt(8, IY + 48, "peso → h₁", { style: "font-size:12px" });
+      txt(8, IY + 70, "peso → h₂", { style: "font-size:12px" });
+      x.forEach((b, i) => [L, R].forEach((Wt, k) =>
+        txt(IX(i), IY + 48 + k * 22, f2(Wt[i], 1), { "text-anchor": "middle", style: `font-size:14px;font-weight:700;fill:${Wt[i] > 0 ? "var(--fwd)" : "var(--bwd)"}` })));
+      txt(300, IY + 94, "centro", { "text-anchor": "middle", style: "font-size:11px" });
+      H.forEach(([hx, hy]) => el("line", { x1: hx, y1: hy, x2: OUT[0], y2: OUT[1], stroke: BWD, "stroke-width": 8.8 / 3.2 }));
+      txt(232, 100, "−8,8", { "text-anchor": "end", style: "font-size:13px;font-weight:700;fill:var(--bwd)" });
+      txt(368, 100, "−8,8", { style: "font-size:13px;font-weight:700;fill:var(--bwd)" });
+      const unit = (cx, cy, rr, a, label, sub) => {
+        el("circle", { cx, cy, r: rr, fill: "var(--card)" });
+        el("circle", { cx, cy, r: rr, fill: `rgba(59,91,219,${0.08 + 0.85 * a})`, stroke: INK, "stroke-width": 2 });
+        txt(cx, cy + 5, f2(a), { "text-anchor": "middle", style: `font-size:14px;font-weight:700;fill:${a > 0.5 ? "#fff" : "var(--ink)"}` });
+        if (label) txt(cx, cy - rr - 8, label, { "text-anchor": "middle", style: "font-size:12px" });
+        if (sub) txt(cx + rr + 6, cy + 4, sub, { style: "font-size:11.5px" });
+      };
+      unit(H[0][0], H[0][1], 26, r.h1, "", "bias −1,1");
+      unit(H[1][0], H[1][1], 26, r.h2, "", "bias −1,1");
+      txt(H[0][0] - 34, H[0][1] + 5, "h₁", { "text-anchor": "end", style: "font-size:14px;font-weight:700;fill:var(--ink)" });
+      txt(H[1][0] - 34, H[1][1] + 5, "h₂", { "text-anchor": "end", style: "font-size:14px;font-weight:700;fill:var(--ink)" });
+      unit(OUT[0], OUT[1], 28, r.y, "", "bias +6,4");
+      txt(OUT[0] - 40, OUT[1] + 5, "saída", { "text-anchor": "end", style: "font-size:12px" });
+      x.forEach((b, i) => {
+        const g = el("g", { class: "inp", role: "button", tabindex: 0, "aria-label": `Entrada ${i + 1}` });
+        el("rect", { x: IX(i) - 22, y: IY - 22, width: 44, height: 44, rx: 8, fill: b ? "#1d1d1f" : "var(--card)", stroke: INK, "stroke-width": 2 }, g);
+        txt(IX(i), IY + 6, String(b), { "text-anchor": "middle", style: `font-size:18px;font-weight:700;fill:${b ? "#fff" : "var(--ink)"}` }, g);
+        g.addEventListener("click", () => { x[i] = 1 - x[i]; draw(); });
+        g.addEventListener("keydown", e => { if (e.key === "Enter") { e.stopPropagation(); x[i] = 1 - x[i]; draw(); } });
+      });
+      const sym = isSym(x), ok = (r.y > 0.5) === sym;
+      document.getElementById("sym-out").innerHTML =
+        `Entrada <b class="mono">${x.join(" ")}</b> · é espelho? <b>${sym ? "sim" : "não"}</b><br>` +
+        `Saída da rede: <span class="big" style="color:${r.y > 0.5 ? "var(--fwd)" : "var(--bwd)"}">${f2(r.y)}</span> → “${r.y > 0.5 ? "simétrico" : "não simétrico"}” ${ok ? "✓" : "✗"}`;
+    }
+    document.getElementById("sym-rand").addEventListener("click", () => { x = x.map(() => (Math.random() < 0.5 ? 1 : 0)); draw(); });
+    document.getElementById("sym-mirror").addEventListener("click", () => { const a = [0, 1, 2].map(() => (Math.random() < 0.5 ? 1 : 0)); x = [...a, ...a.slice().reverse()]; draw(); });
+    document.getElementById("sym-all").addEventListener("click", () => {
+      let ok = 0, ns = 0;
+      for (let p = 0; p < 64; p++) { const v = [...Array(6)].map((_, i) => (p >> (5 - i)) & 1); if (isSym(v)) ns++; if ((run(v).y > 0.5) === isSym(v)) ok++; }
+      document.getElementById("sym-all-out").innerHTML = `Dos 64 padrões possíveis (${ns} são espelhos), a rede acerta <b>${ok}</b>.`;
+    });
+    draw();
+  })();
+
+  // ===== Slide 13: árboles genealógicos (Figura 2) =====
+  (function () {
+    const svg = document.getElementById("fam-svg"); if (!svg) return;
+    const EN = { Christopher: [130, 40], Penelope: [222, 40], Andrew: [400, 40], Christine: [490, 40], Margaret: [72, 100], Arthur: [168, 100], Victoria: [272, 100], James: [362, 100], Jennifer: [456, 100], Charles: [548, 100], Colin: [282, 150], Charlotte: [362, 150] };
+    const IT_NAMES = { Christopher: "Roberto", Penelope: "Maria", Andrew: "Pierro", Christine: "Francesca", Margaret: "Gina", Arthur: "Emilio", Victoria: "Lucia", James: "Marco", Jennifer: "Angela", Charles: "Tomaso", Colin: "Alfonso", Charlotte: "Sophia" };
+    const POS = {};
+    for (const k in EN) { POS[k] = EN[k]; POS[IT_NAMES[k]] = [EN[k][0], EN[k][1] + 170]; }
+    const COUPLES = [["Christopher", "Penelope"], ["Andrew", "Christine"], ["Margaret", "Arthur"], ["Victoria", "James"], ["Jennifer", "Charles"]];
+    const KIDS = [[["Christopher", "Penelope"], ["Arthur", "Victoria"]], [["Andrew", "Christine"], ["James", "Jennifer"]], [["Victoria", "James"], ["Colin", "Charlotte"]]];
+    const EX = [
+      { label: "(Colin, tia, ?)", p1: "Colin", rel: "tia", ans: ["Margaret", "Jennifer"], why: "Colin tem <b>duas</b> tias: Margaret (casada com Arthur, irmão da mãe) e Jennifer (irmã do pai). As duas saídas certas devem acender." },
+      { label: "(Sophia, pai, ?)", p1: "Sophia", rel: "pai", ans: ["Marco"], why: "O pai de Sophia é <b>Marco</b>. Na árvore inglesa, a mesma posição é a de James, pai de Charlotte." },
+      { label: "(Emilio, irmã, ?)", p1: "Emilio", rel: "irmã", ans: ["Lucia"], why: "A irmã de Emilio é <b>Lucia</b>. Mesma posição que Victoria, irmã de Arthur." }
+    ];
+    let cur = 0;
+    function draw() {
+      svg.innerHTML = "";
+      const { el, txt } = helpers(svg, []);
+      const ex = EX[cur];
+      [0, 170].forEach((dy, k) => {
+        txt(590, 18 + dy, k ? "italianos" : "ingleses", { "text-anchor": "end", style: "font-size:12px;font-weight:700;fill:var(--accent)" });
+        const nm = n => (k ? IT_NAMES[n] : n);
+        KIDS.forEach(([[a, b], [c, d]]) => {
+          const mx = (EN[a][0] + EN[b][0]) / 2, y0 = EN[a][1] + dy + 6, yb = EN[c][1] + dy - 26;
+          el("line", { x1: mx, y1: y0, x2: mx, y2: yb, stroke: MUT });
+          el("line", { x1: EN[c][0], y1: yb, x2: EN[d][0], y2: yb, stroke: MUT });
+          [c, d].forEach(z => el("line", { x1: EN[z][0], y1: yb, x2: EN[z][0], y2: EN[z][1] + dy - 15, stroke: MUT }));
+        });
+        COUPLES.forEach(([a, b]) => txt((EN[a][0] + EN[b][0]) / 2, EN[a][1] + dy + 5, "=", { "text-anchor": "middle" }));
+        for (const n in EN) {
+          const name = nm(n), [x, y] = POS[name];
+          const isP = name === ex.p1, isA = ex.ans.includes(name);
+          const hw = name.length * 4 + 9;
+          if (isP || isA) el("rect", { x: x - hw, y: y - 15, width: 2 * hw, height: 24, rx: 12, fill: isP ? "var(--accent-soft)" : "var(--fwd-soft)", stroke: isP ? ACC : FWD, "stroke-width": 2 });
+          txt(x, y + 2, name, { "text-anchor": "middle", style: `font-size:13px;${isP || isA ? "font-weight:700;fill:var(--ink)" : ""}` });
+        }
+      });
+      el("line", { x1: 20, y1: 178, x2: 580, y2: 178, stroke: LINE, "stroke-dasharray": "4 5" });
+      document.getElementById("fam-out").innerHTML = `<b style="color:var(--accent)">${ex.p1}</b> + <b>${ex.rel}</b> → <b style="color:var(--fwd)">${ex.ans.join(" e ")}</b><br><span style="font-size:16.5px;color:var(--muted)">${ex.why}</span>`;
+      [...document.querySelectorAll("#fam-btns button")].forEach((b, i) => b.classList.toggle("on", i === cur));
+    }
+    const box = document.getElementById("fam-btns");
+    EX.forEach((ex, i) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn"; b.textContent = ex.label; b.addEventListener("click", () => { cur = i; draw(); }); box.appendChild(b); });
+    draw();
+  })();
+
+  // ===== Slide 16: 1986 → hoy =====
+  timeline("after", 1985, 2025, [
+    { y: 1986 }, { y: 1989 }, { y: 1991, row: 1 }, { y: 1997 }, { y: 1998, row: 1 }, { y: 2006 }, { y: 2012 }, { y: 2017 }, { y: 2019, row: 1 }, { y: 2022 }, { y: 2024, row: 1 }
+  ], [
+    { name: "1986", on: [0], year: "1986", lines: ["este artigo", "backprop + camadas ocultas que aprendem"],
+      text: "O ponto de partida: o artigo na <b>Nature</b> e o livro <i>PDP</i>. Muitos grupos começam a treinar redes com backprop." },
+    { name: "1989", on: [1], year: "1989", lines: ["LeCun: redes convolucionais", "backprop lendo CEPs escritos à mão (correio dos EUA)", "Cybenko: uma camada oculta basta (em teoria)"],
+      text: "Yann <b>LeCun</b> (citado no artigo!) usa backprop numa rede com <b>convoluções</b> para ler códigos postais manuscritos. No mesmo ano, <b>Cybenko</b> prova que uma rede com uma camada oculta de sigmoides pode aproximar qualquer função contínua, se tiver unidades suficientes." },
+    { name: "1991–1997", on: [2, 3], year: "1991–1997", lines: ["o gradiente some nas redes muito profundas", "Hochreiter (1991) explica por quê", "LSTM (1997): uma rede recorrente que lembra"],
+      text: "Problema: em redes com muitas camadas (ou recorrentes, como na Fig. 5), a “culpa” fica <b>cada vez menor</b> ao descer, e as primeiras camadas quase não aprendem. Hochreiter analisa isso em 1991; com Schmidhuber cria a <b>LSTM</b> em 1997." },
+    { name: "1998–2006", on: [4, 5], year: "1998–2006", lines: ["LeNet-5 lê cheques nos bancos", "Hinton (2006): redes profundas pré-treinadas", "nasce o nome “deep learning”"],
+      text: "A <b>LeNet-5</b> (LeCun e outros, 1998) é usada para ler cheques. Em 2006, <b>Hinton</b> mostra um jeito de treinar redes profundas (pré-treino camada por camada) e o termo <i>deep learning</i> se populariza." },
+    { name: "2012", on: [6], year: "2012", lines: ["AlexNet vence o ImageNet", "backprop + GPUs + muitos dados", "(Krizhevsky, Sutskever e Hinton)"],
+      text: "A <b>AlexNet</b>, treinada com backprop em <b>placas de vídeo (GPUs)</b>, ganha a competição ImageNet com folga. É a virada: a indústria inteira passa a usar redes profundas." },
+    { name: "2017–2022", on: [7, 9], year: "2017–2022", lines: ["Transformer (2017): “Attention is all you need”", "ChatGPT (2022)", "bilhões de pesos, treinados com backprop"],
+      text: "O <b>Transformer</b> (2017) vira a base dos modelos de linguagem. O <b>ChatGPT</b> (2022) e as outras IAs de hoje têm bilhões de pesos. E todos são ajustados com o mesmo procedimento de 1986: passo para frente, erro, passo para trás, descer o gradiente." },
+    { name: "Prêmios", on: [8, 10], year: "2019 · 2024", lines: ["Prêmio Turing: Hinton, LeCun e Bengio", "Nobel de Física 2024: Hopfield e Hinton"],
+      text: "O <b>Prêmio Turing</b> (referente a 2018, entregue em 2019) vai para Hinton, LeCun e Bengio. Em 2024, <b>Hopfield e Hinton</b> recebem o <b>Nobel de Física</b> por trabalhos que permitiram o aprendizado de máquina com redes neurais." }
+  ]);
+
+  // ===== Navegación de las diapositivas =====
+  // Las diapositivas con class="appendix" no entran en el recorrido normal: se abren con la tecla A.
+  (function () {
+    const all = [...document.querySelectorAll(".slide")];
+    const MAIN = all.filter(s => !s.classList.contains("appendix"));
+    const APP = all.filter(s => s.classList.contains("appendix"));
+    const counter = document.getElementById("hud-n");
+    const bar = document.querySelector(".progress");
+    let list = MAIN, idx = 0, savedMain = 0, current = null;
+    const animOf = s => { for (const svg of s.querySelectorAll("svg")) { const a = ANIMS.get(svg); if (a) return a; } return null; };
+    const fit = () => document.documentElement.style.setProperty("--s", Math.min(innerWidth / 1280, innerHeight / 720));
+    function show(n, fromBack) {
+      n = Math.max(0, Math.min(list.length - 1, n));
+      if (current) { const oa = animOf(current); if (oa) oa.stop(); current.classList.remove("active"); }
+      idx = n; current = list[idx];
+      current.classList.add("active");
+      const a = animOf(current);
+      if (a) a.go(fromBack ? a.n() - 1 : 0);
+      if (list === MAIN) {
+        counter.textContent = `${idx + 1} / ${MAIN.length}`;
+        bar.style.width = `${(idx + 1) / MAIN.length * 100}%`;
+        history.replaceState(null, "", "#" + (idx + 1));
+      } else {
+        counter.textContent = `Apêndice ${idx + 1} / ${APP.length} · A/Esc: voltar`;
+      }
+    }
+    function toggleAppendix() {
+      if (!APP.length) return;
+      if (list === MAIN) { savedMain = idx; list = APP; show(0); }
+      else { list = MAIN; show(savedMain); }
+    }
+    function next() { const a = animOf(current); if (a && a.cur() < a.n() - 1) a.go(a.cur() + 1); else if (idx < list.length - 1) show(idx + 1); }
+    function prev() { const a = animOf(current); if (a && a.cur() > 0) a.go(a.cur() - 1); else if (idx > 0) show(idx - 1, true); }
+    document.addEventListener("keydown", e => {
+      if (e.target.closest && e.target.closest("input, textarea")) return;
+      const k = e.key;
+      if (k === "ArrowRight" || k === " " || k === "Enter") { e.preventDefault(); next(); }
+      else if (k === "ArrowLeft" || k === "Backspace") { e.preventDefault(); prev(); }
+      else if (k === "PageDown" || k === "ArrowDown") { e.preventDefault(); show(idx + 1); }
+      else if (k === "PageUp" || k === "ArrowUp") { e.preventDefault(); show(idx - 1); }
+      else if (k === "Home") show(0);
+      else if (k === "End") show(list.length - 1);
+      else if (k === "a" || k === "A") toggleAppendix();
+      else if (k === "Escape" && list === APP) toggleAppendix();
+      else if (k === "f" || k === "F") { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
+    });
+    document.addEventListener("click", e => { const b = e.target.closest("button"); if (b) b.blur(); });
+    document.getElementById("hud-prev").addEventListener("click", prev);
+    document.getElementById("hud-next").addEventListener("click", next);
+    addEventListener("resize", fit);
+    fit();
+    const start = parseInt(location.hash.slice(1), 10);
+    show(Number.isFinite(start) ? start - 1 : 0);
+  })();
+</script>
+</body>
+</html>

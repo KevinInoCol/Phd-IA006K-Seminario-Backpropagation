@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backpropagation explicado</title>
+<style>
+  :root {
+    --bg: #f7f6f2; --card: #ffffff; --ink: #1d1d1f; --muted: #5f6368; --line: #e3e1da;
+    --accent: #3b5bdb; --accent-soft: #e8edff;
+    --bwd: #d9480f; --bwd-soft: #fff0e6;
+    --fwd: #2b8a3e; --fwd-soft: #e6f6ea;
+    --code: #f1efe8;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 16px 80px; }
+  header.hero { padding: 56px 0 28px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+  .kicker { color: var(--accent); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; font-size: 13px; }
+  h1 { font-size: clamp(28px, 5vw, 42px); line-height: 1.15; margin: 8px 0 12px; }
+  .sub { color: var(--muted); margin: 0; }
+  nav.toc { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line);
+    display: flex; gap: 6px; overflow-x: auto; padding: 10px 0; scrollbar-width: none; }
+  nav.toc a { white-space: nowrap; text-decoration: none; color: var(--muted); font-size: 14px;
+    padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); }
+  nav.toc a:hover { color: var(--accent); border-color: var(--accent); }
+  section { padding-top: 36px; }
+  h2 { font-size: 26px; margin: 0 0 4px; }
+  h2 .num { color: var(--accent); margin-right: 8px; }
+  h3 { font-size: 19px; margin: 28px 0 8px; }
+  p { margin: 10px 0; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; margin: 16px 0; }
+  .note { border-left: 4px solid var(--accent); background: var(--accent-soft); border-radius: 8px; padding: 12px 16px; margin: 16px 0; }
+  .warn { border-left: 4px solid var(--bwd); background: var(--bwd-soft); border-radius: 8px; padding: 12px 16px; margin: 16px 0; }
+  .quote { border-left: 4px solid var(--line); padding: 2px 0 2px 16px; margin: 14px 0; color: var(--muted); font-style: italic; }
+  .fwd { color: var(--fwd); font-weight: 600; }
+  .bwd { color: var(--bwd); font-weight: 600; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; }
+  code { background: var(--code); padding: 1px 6px; border-radius: 5px; }
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 15.5px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 13.5px; text-transform: uppercase; letter-spacing: .03em; }
+  .table-scroll { overflow-x: auto; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .eqbox { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 18px; margin: 14px 0; }
+  .eqrow { display: flex; align-items: center; justify-content: center; gap: 18px; overflow-x: auto; padding: 4px 0; }
+  .eqrow math { font-size: 1.4em; }
+  .eqnum { color: var(--muted); }
+  .eqread { text-align: center; color: var(--muted); margin: 4px 0 0; }
+  .steps { counter-reset: s; list-style: none; padding: 0; }
+  .steps > li { counter-increment: s; position: relative; padding-left: 40px; margin: 12px 0; }
+  .steps > li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); color: #fff; font-size: 14px; font-weight: 700; display: grid; place-items: center; }
+  .tl { list-style: none; padding: 0; margin: 14px 0; border-left: 3px solid var(--line); }
+  .tl li { position: relative; padding: 4px 0 10px 22px; }
+  .tl li::before { content: ""; position: absolute; left: -8px; top: 11px; width: 13px; height: 13px; border-radius: 50%; background: var(--card); border: 3px solid var(--accent); }
+  .tl b.y { color: var(--accent); margin-right: 6px; }
+  .pieces { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 16px 0; }
+  .piece { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .piece b { display: block; color: var(--accent); margin-bottom: 4px; }
+  figure { margin: 16px 0; }
+  figure svg { width: 100%; height: auto; display: block; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+  figure svg text { font-family: inherit; font-size: 14px; fill: var(--muted); }
+  figcaption { color: var(--muted); font-size: 13px; margin-top: 6px; font-style: italic; }
+  .ours { display: inline-block; font-size: 12px; font-weight: 700; color: var(--bwd); background: var(--bwd-soft); border-radius: 999px; padding: 0 8px; font-style: normal; }
+  .summary { font-size: 19px; line-height: 1.6; background: var(--card); border: 2px solid var(--accent); border-radius: 14px; padding: 20px 22px; }
+  footer { color: var(--muted); font-size: 14px; margin-top: 48px; border-top: 1px solid var(--line); padding-top: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">IA006K · Seminários sobre a História da Inteligência Artificial · UNICAMP</div>
+  <h1>Backpropagation, explicado paso a paso</h1>
+  <p class="sub">Rumelhart, Hinton y Williams, <em>“Learning representations by back-propagating errors”</em>, Nature 323, 533–536, 1986. Material de estudio para Kevin. Las slides para el aula están en portugués, en <code>backprop_slides_PT.html</code>.</p>
+</header>
+
+<nav class="toc">
+  <a href="#p0">0 · Conceptos</a>
+  <a href="#p1">1 · Contexto</a>
+  <a href="#p2">2 · El problema</a>
+  <a href="#p3">3 · La red y el error</a>
+  <a href="#p4">4 · Hacia atrás</a>
+  <a href="#p5">5 · Bajar la ladera</a>
+  <a href="#p6">6 · Experimentos</a>
+  <a href="#p7">7 · Límites</a>
+  <a href="#p8">8 · Lo que vino después</a>
+  <a href="#guia">Guía de slides</a>
+  <a href="#glosario">Glosario PT–ES</a>
+  <a href="#resumen">Resumen</a>
+</nav>
+
+<!-- ================= PARTE 0 ================= -->
+<section id="p0">
+  <h2><span class="num">0</span>Conceptos básicos</h2>
+
+  <h3>0.1 Una neurona artificial</h3>
+  <p>Una “neurona” (el paper dice <em>unit</em>, unidad) es una cuenta muy simple:</p>
+  <ol class="steps">
+    <li>Recibe varios números de entrada.</li>
+    <li>Multiplica cada uno por un <b>peso</b> y suma todo. Un peso grande significa “esta entrada importa mucho”; uno negativo, “esta entrada me apaga”.</li>
+    <li>Pasa la suma por una función que la “aprieta” entre 0 y 1. Esa es su salida.</li>
+  </ol>
+  <p>Una <b>red</b> son muchas de estas unidades conectadas en <b>capas</b>: la capa de entrada recibe los datos, la de salida da la respuesta, y las del medio se llaman <b>capas ocultas</b> (<em>hidden</em>), porque nadie ve directamente lo que hacen.</p>
+
+  <h3>0.2 Aprender = ajustar los pesos</h3>
+  <p>La red no tiene reglas escritas por nadie. Todo lo que “sabe” está en sus pesos. <b>Entrenar</b> es mostrarle ejemplos con la respuesta correcta e ir cambiando los pesos hasta que acierte.</p>
+
+  <h3>0.3 Derivada = pendiente</h3>
+  <p>No hace falta más cálculo que esto: la <b>derivada</b> de una cosa respecto de otra dice <b>cuánto cambia la primera si muevo un poquito la segunda</b>. Si ∂E/∂w = −0,07, subir el peso <i>w</i> un poquito <b>baja</b> el error <i>E</i>. Ya sabemos para qué lado mover el peso.</p>
+  <p>La <b>regla de la cadena</b>: si A afecta a B y B afecta a C, el efecto de A sobre C es (efecto de A sobre B) × (efecto de B sobre C). Todo el backprop es aplicar esta regla capa por capa, de atrás hacia adelante.</p>
+</section>
+
+<!-- ================= PARTE 1 ================= -->
+<section id="p1">
+  <h2><span class="num">1</span>El contexto histórico</h2>
+  <p>Esta es la parte de Sara (introducción histórica). Línea de tiempo:</p>
+  <ul class="tl">
+    <li><b class="y">1943</b><b>McCulloch y Pitts</b>: la neurona artificial. Suma y “dispara” si pasa de un umbral. Los pesos son fijos: no aprende.</li>
+    <li><b class="y">1949</b><b>Hebb</b>: el cerebro aprende reforzando conexiones. Idea clave: aprender es cambiar pesos.</li>
+    <li><b class="y">1950</b><b>Turing</b>, el texto que ya leímos. En la §7 (<em>Learning Machines</em>) propone una “máquina-niño” que aprenda en vez de programar todo.</li>
+    <li><b class="y">1958</b><b>Rosenblatt</b>: el <b>perceptrón</b>. Primera red que ajusta sus pesos sola, con prueba de que converge. Pero <b>solo aprende la última capa</b>; las anteriores se fijan a mano.</li>
+    <li><b class="y">1969</b><b>Minsky y Papert</b>, libro <em>Perceptrons</em>: prueban con matemáticas lo que un perceptrón de una capa <b>no puede</b> hacer. Con varias capas se podría, pero nadie sabía entrenarlas. El interés y el financiamiento se van a otras áreas de la IA.</li>
+    <li><b class="y">1970–1985</b>Pocas personas siguen. Aparecen piezas sueltas: <b>Linnainmaa</b> (1970) calcula derivadas de atrás hacia adelante; <b>Werbos</b> (1974, tesis en Harvard) propone usarlo en redes; <b>Hopfield</b> (1982) y la <b>máquina de Boltzmann</b> (1985, con Hinton) traen de vuelta a físicos y psicólogos; <b>Parker</b> y <b>Le Cun</b> (1985) llegan a variantes del backprop.</li>
+    <li><b class="y">1986</b>El grupo <b>PDP</b> de San Diego publica <em>Parallel Distributed Processing</em> y este paper sale en <b>Nature</b>. Las redes neuronales vuelven.</li>
+  </ul>
+  <div class="note">Conexión con el curso: Turing (1950) imaginó máquinas que aprenden; el perceptrón (1958) lo intentó; Minsky y Papert (1969) mostraron sus límites; el backprop (1986) los superó.</div>
+</section>
+
+<!-- ================= PARTE 2 ================= -->
+<section id="p2">
+  <h2><span class="num">2</span>El problema: el XOR y las capas ocultas</h2>
+  <p>Un perceptrón de una capa traza una <b>línea recta</b> en el espacio de entradas: de un lado responde 1, del otro 0.</p>
+  <div class="table-scroll"><table>
+    <tr><th>Entrada (x₁, x₂)</th><th>AND</th><th>OR</th><th>XOR</th></tr>
+    <tr><td>(0, 0)</td><td>0</td><td>0</td><td>0</td></tr>
+    <tr><td>(0, 1)</td><td>0</td><td>1</td><td><b>1</b></td></tr>
+    <tr><td>(1, 0)</td><td>0</td><td>1</td><td><b>1</b></td></tr>
+    <tr><td>(1, 1)</td><td>1</td><td>1</td><td>0</td></tr>
+    <tr><td>¿Una recta separa?</td><td class="fwd">sí</td><td class="fwd">sí</td><td class="bwd">no</td></tr>
+  </table></div>
+  <p>En el XOR (“o exclusivo”: 1 si son distintas) los dos 1 quedan en esquinas opuestas y <b>ninguna recta</b> los separa de los 0. Con <b>una capa oculta</b> de dos unidades sí se puede: una calcula OR, otra AND, y la salida responde “OR y no AND”.</p>
+  <div class="warn"><b>El verdadero problema no era resolver el XOR, sino aprenderlo.</b> En la salida sabemos qué respuesta queríamos y cuánto nos equivocamos. Pero nadie le dice a una unidad oculta qué debería hacer. Si la salida se equivocó, <b>¿qué unidad del medio tuvo la culpa, y cuánta?</b> Esto se llama el problema de <em>asignación de crédito</em>.</div>
+  <div class="quote">“In perceptrons, there are ‘feature analysers’ between the input and output that are not true hidden units because their input connections are fixed by hand […] they do not learn representations.” (p. 533)</div>
+  <p>El paper responde: <b>pasar la culpa desde la salida hacia atrás</b>, capa por capa, con la regla de la cadena.</p>
+</section>
+
+<!-- ================= PARTE 3 ================= -->
+<section id="p3">
+  <h2><span class="num">3</span>El paper: la red y el error</h2>
+  <h3>3.1 Qué dice el resumen</h3>
+  <p>Traducción libre: <em>“Describimos un nuevo procedimiento de aprendizaje, back-propagation, para redes de unidades parecidas a neuronas. El procedimiento ajusta repetidamente los pesos de las conexiones para minimizar la diferencia entre la salida real de la red y la salida deseada. Como resultado, unidades internas ‘ocultas’, que no son ni entrada ni salida, pasan a representar características importantes del problema, y las regularidades de la tarea quedan capturadas por las interacciones entre ellas. Esta capacidad de crear nuevas características útiles distingue al back-propagation de métodos anteriores más simples, como el procedimiento de convergencia del perceptrón.”</em></p>
+  <p>Por eso el título habla de <b>aprender representaciones</b>: lo nuevo no es solo bajar el error, sino que las capas del medio <b>inventan sus propias características</b>.</p>
+
+  <h3>3.2 Hacia adelante (Eq. 1 y 2)</h3>
+  <div class="eqbox"><div class="eqrow"><math><mrow><msub><mi>x</mi><mi>j</mi></msub><mo>=</mo><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>y</mi><mi>i</mi></msub><msub><mi>w</mi><mrow><mi>j</mi><mi>i</mi></mrow></msub></mrow></math><span class="eqnum">(1)</span>
+    <math><mrow><msub><mi>y</mi><mi>j</mi></msub><mo>=</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><msup><mi>e</mi><mrow><mo>−</mo><msub><mi>x</mi><mi>j</mi></msub></mrow></msup></mrow></mfrac></mrow></math><span class="eqnum">(2)</span></div>
+    <p class="eqread">Cada unidad <i>j</i> suma lo que le llega (<i>x</i> = entrada total) y lo pasa por la sigmoide (<i>y</i> = salida).</p></div>
+  <ul>
+    <li><b>Notación del paper:</b> <i>x</i> es la entrada total de una unidad (¡no la entrada de la red!), <i>y</i> es su salida, <i>w<sub>ji</sub></i> es el peso de la unidad <i>i</i> hacia la <i>j</i>.</li>
+    <li>El <b>bias</b> (sesgo) es un peso extra desde una entrada que siempre vale 1. Funciona como un umbral.</li>
+    <li>La <b>sigmoide</b> reemplaza al escalón del perceptrón. La diferencia clave: es <b>suave</b> y tiene derivada en todos lados. Con un escalón la pendiente es 0 o infinita, y no se puede saber hacia dónde mover los pesos. El paper aclara que sirve cualquier función con derivada acotada.</li>
+    <li>Las capas se calculan <b>en orden</b>, de abajo (entrada) hacia arriba (salida). Eso es el <b>pase hacia adelante</b> (<em>forward pass</em>).</li>
+  </ul>
+
+  <h3>3.3 El error (Eq. 3)</h3>
+  <div class="eqbox"><div class="eqrow"><math><mrow><mi>E</mi><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><munder><mo>∑</mo><mi>c</mi></munder><munder><mo>∑</mo><mi>j</mi></munder><msup><mrow><mo stretchy="false">(</mo><msub><mi>y</mi><mrow><mi>j</mi><mo>,</mo><mi>c</mi></mrow></msub><mo>−</mo><msub><mi>d</mi><mrow><mi>j</mi><mo>,</mo><mi>c</mi></mrow></msub><mo stretchy="false">)</mo></mrow><mn>2</mn></msup></mrow></math><span class="eqnum">(3)</span></div>
+    <p class="eqread">Para cada ejemplo <i>c</i> y cada salida <i>j</i>: (lo que dio − lo deseado)², sumado y dividido entre 2.</p></div>
+  <p>El ½ está solo para que la derivada quede limpia: la derivada de ½(y − d)² es simplemente (y − d). El objetivo de todo el entrenamiento es <b>hacer E lo más chico posible</b>.</p>
+</section>
+
+<!-- ================= PARTE 4 ================= -->
+<section id="p4">
+  <h2><span class="num">4</span>El pase hacia atrás (Eq. 4–7), con números</h2>
+  <p>Queremos ∂E/∂w para <b>cada</b> peso: cuánto cambia el error si muevo ese peso. El paper lo calcula de atrás hacia adelante en cuatro fórmulas:</p>
+  <div class="table-scroll"><table>
+    <tr><th>Eq.</th><th>Fórmula</th><th>En palabras</th></tr>
+    <tr><td>4</td><td class="mono">∂E/∂y = y − d</td><td>En la salida: cuánto cambia el error si cambia la salida.</td></tr>
+    <tr><td>5</td><td class="mono">∂E/∂x = ∂E/∂y · y(1 − y)</td><td>Atravesar la sigmoide. Su derivada es y(1 − y), fácil de calcular con lo que ya tenemos.</td></tr>
+    <tr><td>6</td><td class="mono">∂E/∂w<sub>ji</sub> = ∂E/∂x<sub>j</sub> · y<sub>i</sub></td><td>Culpa de un peso = culpa de la unidad de arriba × lo que pasó por ese peso. <b>Si y<sub>i</sub> = 0, el peso no tuvo culpa.</b></td></tr>
+    <tr><td>7</td><td class="mono">∂E/∂y<sub>i</sub> = Σ<sub>j</sub> ∂E/∂x<sub>j</sub> · w<sub>ji</sub></td><td>La culpa <b>baja</b> a la capa anterior por los mismos pesos, sumando todo lo que llega. Luego se repiten 5–7 en esa capa.</td></tr>
+  </table></div>
+
+  <h3>4.1 Ejemplo con números <span class="ours">ejemplo nuestro</span></h3>
+  <p>Es el mismo ejemplo de la slide 8 (animado allá). Red 2 → 2 → 1, entrada (1, 0), salida deseada d = 1 (como en el XOR). Los pesos son inventados.</p>
+  <figure>
+    <svg viewBox="0 0 600 260" role="img" aria-label="Red del ejemplo">
+      <g stroke="#e3e1da" stroke-width="2">
+        <line x1="80" y1="70" x2="300" y2="70"/><line x1="80" y1="190" x2="300" y2="70"/>
+        <line x1="80" y1="70" x2="300" y2="190"/><line x1="80" y1="190" x2="300" y2="190"/>
+        <line x1="300" y1="70" x2="510" y2="130"/><line x1="300" y1="190" x2="510" y2="130"/>
+      </g>
+      <g style="font-size:14px;font-weight:700" fill="#1d1d1f">
+        <text x="200" y="62" text-anchor="middle" style="fill:#1d1d1f">0,5</text>
+        <text x="245" y="112" text-anchor="middle" style="fill:#1d1d1f">−0,4</text>
+        <text x="245" y="160" text-anchor="middle" style="fill:#1d1d1f">0,3</text>
+        <text x="200" y="210" text-anchor="middle" style="fill:#1d1d1f">0,8</text>
+        <text x="405" y="88" text-anchor="middle" style="fill:#1d1d1f">0,7</text>
+        <text x="405" y="182" text-anchor="middle" style="fill:#1d1d1f">−0,6</text>
+      </g>
+      <g fill="#fff" stroke="#1d1d1f" stroke-width="2">
+        <circle cx="80" cy="70" r="24"/><circle cx="80" cy="190" r="24"/>
+        <circle cx="300" cy="70" r="24"/><circle cx="300" cy="190" r="24"/><circle cx="510" cy="130" r="24"/>
+      </g>
+      <g style="font-size:15px;font-weight:700;fill:#1d1d1f" text-anchor="middle">
+        <text x="80" y="75" style="fill:#1d1d1f">1</text><text x="80" y="195" style="fill:#1d1d1f">0</text>
+        <text x="300" y="75" style="fill:#1d1d1f">h₁</text><text x="300" y="195" style="fill:#1d1d1f">h₂</text><text x="510" y="135" style="fill:#1d1d1f">y</text>
+      </g>
+      <text x="300" y="34" text-anchor="middle">bias 0,1</text>
+      <text x="300" y="234" text-anchor="middle">bias −0,2</text>
+      <text x="510" y="94" text-anchor="middle">bias 0,2</text>
+      <text x="565" y="135" text-anchor="middle" style="font-weight:700;fill:#3b5bdb">d = 1</text>
+    </svg>
+    <figcaption>Entradas a la izquierda, unidades ocultas en el medio, salida a la derecha.</figcaption>
+  </figure>
+  <div class="table-scroll"><table>
+    <tr><th>Paso</th><th>Cuenta</th><th>Resultado</th></tr>
+    <tr><td class="fwd">1. Ocultas (Eq. 1)</td><td>h₁: 1·0,5 + 0·(−0,4) + 0,1 · h₂: 1·0,3 + 0·0,8 − 0,2</td><td class="n">0,60 · 0,10</td></tr>
+    <tr><td class="fwd">2. Sigmoide (Eq. 2)</td><td>σ(0,60) · σ(0,10)</td><td class="n">0,646 · 0,525</td></tr>
+    <tr><td class="fwd">3. Salida</td><td>0,646·0,7 + 0,525·(−0,6) + 0,2 = 0,337 → σ</td><td class="n">y = 0,583</td></tr>
+    <tr><td class="bwd">4. Error (Eq. 3)</td><td>½ (0,583 − 1)²</td><td class="n">E = 0,087</td></tr>
+    <tr><td class="bwd">5. Salida (Eq. 4–5)</td><td>∂E/∂y = 0,583 − 1 · ∂E/∂x = −0,417 · 0,583 · 0,417</td><td class="n">−0,417 · −0,101</td></tr>
+    <tr><td class="bwd">6. Pesos de salida (Eq. 6)</td><td>−0,101 · 0,646 · −0,101 · 0,525</td><td class="n">−0,065 · −0,053</td></tr>
+    <tr><td class="bwd">7. La culpa baja (Eq. 7)</td><td>h₁: −0,101 · 0,7 · h₂: −0,101 · (−0,6)</td><td class="n">−0,071 · +0,061</td></tr>
+    <tr><td class="bwd">8. Sigmoide de las ocultas (Eq. 5)</td><td>−0,071 · 0,646 · 0,354 · +0,061 · 0,525 · 0,475</td><td class="n">−0,016 · +0,015</td></tr>
+    <tr><td class="fwd">9. Actualizar (Eq. 8, ε = 0,5)</td><td>peso − 0,5 · ∂E/∂w</td><td class="n">0,7→0,733 · −0,6→−0,573 · 0,5→0,508 · 0,3→0,292</td></tr>
+    <tr><td class="fwd">10. Probar de nuevo</td><td>misma entrada con los pesos nuevos</td><td class="n">y = 0,605 · E = 0,078</td></tr>
+  </table></div>
+  <div class="note">Tres cosas para comentar en la presentación:
+    <ul>
+      <li><b>Los signos tienen sentido.</b> ∂E/∂y negativo significa “la salida debería subir”. h₂ recibe culpa con el signo contrario porque su peso hacia la salida es negativo: para subir la salida, h₂ debe bajar.</li>
+      <li><b>Los pesos que salen de x₂ no cambian</b>, porque x₂ = 0 (Eq. 6): esa entrada no contribuyó al error.</li>
+      <li>Un solo paso baja el error de 0,087 a 0,078. Repitiendo cientos de veces, la red aprende.</li>
+    </ul></div>
+</section>
+
+<!-- ================= PARTE 5 ================= -->
+<section id="p5">
+  <h2><span class="num">5</span>Bajar la ladera (Eq. 8 y 9)</h2>
+  <div class="eqbox"><div class="eqrow"><math><mrow><mi>Δ</mi><mi>w</mi><mo>=</mo><mo>−</mo><mi>ε</mi><mspace width="0.15em"/><mfrac><mrow><mo>∂</mo><mi>E</mi></mrow><mrow><mo>∂</mo><mi>w</mi></mrow></mfrac></mrow></math><span class="eqnum">(8)</span>
+    <math><mrow><mi>Δ</mi><mi>w</mi><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>=</mo><mo>−</mo><mi>ε</mi><mspace width="0.15em"/><mfrac><mrow><mo>∂</mo><mi>E</mi></mrow><mrow><mo>∂</mo><mi>w</mi><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo></mrow></mfrac><mo>+</mo><mi>α</mi><mspace width="0.15em"/><mi>Δ</mi><mi>w</mi><mo stretchy="false">(</mo><mi>t</mi><mo>−</mo><mn>1</mn><mo stretchy="false">)</mo></mrow></math><span class="eqnum">(9)</span></div></div>
+  <p>Imagina el error como un <b>paisaje</b>: cada combinación de pesos tiene una altura (el error). Con las Eq. 4–7 sabemos la <b>pendiente</b> en el punto donde estamos, aunque no veamos el paisaje entero.</p>
+  <ul>
+    <li><b>Eq. 8 (descenso del gradiente):</b> dar un paso <b>contra</b> la pendiente. <b>ε</b> (épsilon) es el tamaño del paso, la <em>tasa de aprendizaje</em>. Si es muy chico, tarda mucho; si es muy grande, salta de un lado al otro.</li>
+    <li><b>Eq. 9 (momento):</b> sumar una parte <b>α</b> (alfa, entre 0 y 1) del paso anterior. Es como una pelota con <b>impulso</b>: el gradiente cambia la velocidad, no la posición. El paper lo usa para ir más rápido sin perder la simplicidad.</li>
+    <li><b>Pasada (<em>sweep</em>, “varredura” en las slides):</b> el paper acumula ∂E/∂w de <b>todos</b> los ejemplos y recién entonces cambia los pesos. Una pasada completa se llama <em>sweep</em> (varredura). También menciona la alternativa de cambiar después de cada ejemplo.</li>
+    <li>Los pesos empiezan con <b>valores pequeños al azar</b> para “romper la simetría”. Si todos empezaran iguales, todas las unidades ocultas aprenderían lo mismo.</li>
+  </ul>
+  <p>En las slides (9 y 10) hay dos demostraciones nuestras: una pelota bajando por una curva inventada y una red que aprende el XOR en vivo. Esta última a veces se queda atascada (por ejemplo, con la semilla 11), lo que sirve para mostrar el problema de los mínimos locales.</p>
+</section>
+
+<!-- ================= PARTE 6 ================= -->
+<section id="p6">
+  <h2><span class="num">6</span>Los experimentos del paper</h2>
+
+  <h3>6.1 Simetría (Figura 1)</h3>
+  <p><b>Tarea:</b> 6 entradas binarias. La red debe decir si forman un espejo alrededor del centro (por ejemplo 1 0 1 1 0 1). Una entrada sola no dice nada, así que hace falta una capa oculta (Minsky y Papert lo probaron, ref. [2]).</p>
+  <p><b>Red:</b> 6 entradas → <b>solo 2</b> unidades ocultas → 1 salida. Entrenada con los 64 patrones posibles, 1.425 pasadas, ε = 0,1, α = 0,9, pesos iniciales entre −0,3 y 0,3.</p>
+  <p><b>La solución que encontró sola:</b></p>
+  <ul>
+    <li>Para cada unidad oculta, los pesos de un lado del centro son <b>iguales y de signo opuesto</b> a los del otro lado (14,2 y −14,2; −3,6 y 3,6; 7,2 y −7,2). Si la entrada es un espejo, todo se cancela, las dos ocultas reciben 0 y su bias negativo (−1,1) las apaga. La salida, con bias +6,4, se enciende.</li>
+    <li>De cada lado, los pesos están en proporción <b>1 : 2 : 4</b> (3,6 : 7,2 : 14,2). Así cada uno de los 8 patrones posibles de un lado da una <b>suma distinta</b>, y solo el espejo exacto cancela.</li>
+    <li>Las dos ocultas tienen los mismos pesos con signos opuestos: para cualquier patrón no simétrico, una de las dos se enciende y apaga la salida.</li>
+  </ul>
+  <p>En la slide 11 la red usa <b>los pesos reales de la Figura 1</b>. Lo verificamos: acierta los 64 patrones (salida ≥ 0,88 para los espejos y ≤ 0,16 para el resto).</p>
+
+  <h3>6.2 Árboles genealógicos (Figuras 2, 3 y 4)</h3>
+  <p><b>Datos:</b> dos familias con la misma estructura, una inglesa y una italiana (12 personas cada una). La información se escribe como frases de 3 términos: <b>(persona 1, relación, persona 2)</b>, por ejemplo (Colin, tía, Jennifer). Hay 12 relaciones (padre, madre, marido, esposa, hijo, hija, tío, tía, hermano, hermana, sobrino, sobrina) y <b>104 frases</b> posibles.</p>
+  <p><b>Red de 5 capas:</b> 24 entradas para la persona 1 + 12 para la relación → 6 + 6 unidades que las codifican → 12 centrales → 6 → 24 salidas (la persona 2). Cada persona es <b>una sola unidad</b> de entrada: nada en la entrada dice “es inglés” o “es de la segunda generación”.</p>
+  <p><b>Resultado:</b> entrenaron con 100 frases y probaron con las 4 que la red nunca vio: <b>acertó las 4</b>.</p>
+  <p><b>Lo más importante (Figura 4):</b> al mirar los pesos de las 6 unidades que codifican a la persona 1, encontraron que la red inventó características con sentido:</p>
+  <ul>
+    <li><b>Unidad 1:</b> inglés vs. italiano. Casi todas las demás ignoran esa diferencia, así que un inglés y su “equivalente” italiano quedan casi iguales por dentro. Por eso lo aprendido en un árbol sirve para el otro.</li>
+    <li><b>Unidad 2:</b> la <b>generación</b> de la persona.</li>
+    <li><b>Unidad 6:</b> la <b>rama</b> de la familia.</li>
+  </ul>
+  <div class="note">Esto es lo que da el título al paper: nadie le dio a la red los conceptos de “generación” o “rama”. Los construyó en la capa oculta porque le servían para bajar el error.</div>
+  <p>Detalles de entrenamiento: 1.500 pasadas; ε = 0,005 y α = 0,5 en las primeras 20, después ε = 0,01 y α = 0,9. Usaron <em>weight decay</em> (cada peso se reduce 0,2% después de cada cambio) para que los pesos fueran más fáciles de interpretar.</p>
+
+  <h3>6.3 Redes recurrentes (Figura 5)</h3>
+  <p>Una red que se ejecuta varias veces seguida (recurrente) equivale a una red de varias capas donde todas las capas comparten <b>los mismos pesos</b>. Se puede entrenar igual si se guarda el historial de cada paso y se promedian los ajustes de los pesos que deben ser iguales. Hoy esto se llama <em>backpropagation through time</em>.</p>
+</section>
+
+<!-- ================= PARTE 7 ================= -->
+<section id="p7">
+  <h2><span class="num">7</span>Los límites que admiten los autores</h2>
+  <div class="pieces">
+    <div class="piece"><b>Mínimos locales</b>El descenso puede quedarse en un valle que no es el más profundo. Pero dicen que en la práctica <em>“very rarely gets stuck in poor local minima”</em>, y que agregar conexiones crea caminos para salir.</div>
+    <div class="piece"><b>No es el cerebro</b><em>“Not a plausible model of learning in brains.”</em> Aun así, muestra que se pueden construir representaciones internas descendiendo el gradiente, y que vale la pena buscar versiones más biológicas.</div>
+    <div class="piece"><b>No fueron los únicos</b>Reconocen que Parker y Le Cun descubrieron variantes por su cuenta.</div>
+  </div>
+</section>
+
+<!-- ================= PARTE 8 ================= -->
+<section id="p8">
+  <h2><span class="num">8</span>Lo que vino después</h2>
+  <p>La parte final del plan de Sara:</p>
+  <ul class="tl">
+    <li><b class="y">1989</b><b>LeCun</b> combina backprop con <b>convoluciones</b> para leer códigos postales escritos a mano (correo de EE. UU.). <b>Cybenko</b> prueba que una capa oculta con suficientes sigmoides puede aproximar cualquier función continua.</li>
+    <li><b class="y">1991–1997</b><b>Hochreiter</b> explica el <em>gradiente que se desvanece</em>: en redes muy profundas o recurrentes, la culpa se hace cada vez más chica al bajar y las primeras capas casi no aprenden. Con Schmidhuber crea la <b>LSTM</b> (1997).</li>
+    <li><b class="y">1998</b><b>LeNet-5</b> (LeCun y otros) se usa para leer cheques.</li>
+    <li><b class="y">2006</b><b>Hinton</b> entrena redes profundas con pre-entrenamiento capa por capa; se populariza el término <em>deep learning</em>.</li>
+    <li><b class="y">2012</b><b>AlexNet</b> (Krizhevsky, Sutskever, Hinton): backprop + GPUs + muchos datos gana ImageNet por mucho. La industria entera adopta las redes profundas.</li>
+    <li><b class="y">2017</b><b>Transformer</b> (“Attention is all you need”): base de los modelos de lenguaje.</li>
+    <li><b class="y">2019</b><b>Premio Turing</b> (correspondiente a 2018) para Hinton, LeCun y Bengio.</li>
+    <li><b class="y">2022</b><b>ChatGPT</b>. Miles de millones de pesos, entrenados con el mismo procedimiento.</li>
+    <li><b class="y">2024</b><b>Nobel de Física</b> para Hopfield y Hinton.</li>
+  </ul>
+
+  <h3>8.1 ¿Quién inventó el backprop?</h3>
+  <p>Pregunta probable en el aula. Respuesta honesta: <b>la idea matemática es anterior</b> (Linnainmaa 1970, Werbos 1974, y Parker y Le Cun en paralelo en 1985). El mérito de este paper fue <b>mostrar que funciona</b>, con experimentos claros, en una revista que todos leían, y conectarlo con la idea de que las capas ocultas <b>aprenden representaciones</b>. Fue el paper que convenció a la comunidad.</p>
+
+  <h3>8.2 Hoy en código</h3>
+  <p>En PyTorch, un paso de entrenamiento son cuatro líneas, y cada una corresponde a ecuaciones del paper: <code>y = rede(x)</code> (Eq. 1–2), el error (Eq. 3), <code>E.backward()</code> (Eq. 4–7, calculadas automáticamente) y <code>otimizador.step()</code> (Eq. 8–9; el SGD con <code>momentum</code> es la Eq. 9). La red de simetría tenía 14 pesos más 3 bias; GPT-3 (2020) tiene 175 mil millones de parámetros.</p>
+</section>
+
+<!-- ================= GUÍA ================= -->
+<section id="guia">
+  <h2><span class="num">🎤</span>Guía de las slides: qué decir en cada una</h2>
+  <p>Las slides siguen las tres partes de Sara. Pueden repartirse: Sara las partes 1 y 3 y tú la 2, o como prefieran.</p>
+  <div class="table-scroll"><table>
+    <tr><th>#</th><th>Slide</th><th>Idea clave para decir</th></tr>
+    <tr><td>1–2</td><td>Título y Roteiro</td><td>Tres partes: momento histórico, el artículo y lo que vino después.</td></tr>
+    <tr><td>3</td><td>De 1943 a 1986 <i>(animada)</i></td><td>Aprender = ajustar pesos. El perceptrón solo ajustaba una capa; Minsky y Papert mostraron el límite.</td></tr>
+    <tr><td>4</td><td>Perceptron e XOR <i>(animada)</i></td><td>Una recta no separa el XOR. Dos unidades ocultas sí, pero elegimos los pesos a mano.</td></tr>
+    <tr><td>5</td><td>O que faltava</td><td>¿Quién tiene la culpa en el medio? Esa es la pregunta que responde el paper.</td></tr>
+    <tr><td>6</td><td>O artigo em uma página</td><td>4 páginas en Nature. Bajar el error y, como efecto, representaciones internas.</td></tr>
+    <tr><td>7</td><td>Eq. 1–3</td><td>Sumar, apretar con la sigmoide (suave, derivable), medir el error.</td></tr>
+    <tr><td>8</td><td>Passo a passo <i>(animada)</i></td><td>El corazón: hacia adelante, error, culpa hacia atrás, actualizar. Comentar los signos y que x₂ = 0 no cambia.</td></tr>
+    <tr><td>9</td><td>Descer a ladeira <i>(animada)</i></td><td>ε grande salta; mínimo local; el momento da impulso.</td></tr>
+    <tr><td>10</td><td>Treinar o XOR ao vivo</td><td>Apretar “Treinar”: en unos 300 pasadas aprende. Si quieren mostrar un fallo, apretar “Nova semente” hasta la 11.</td></tr>
+    <tr><td>11–12</td><td>Simetria</td><td>Pesos reales del paper. Hacer clic en las entradas. Explicar los pesos espejados y la proporción 1:2:4.</td></tr>
+    <tr><td>13–14</td><td>Árvores genealógicas</td><td>La red inventó “generación” y “rama de la familia”. Acertó las 4 frases que nunca vio.</td></tr>
+    <tr><td>15</td><td>Recorrentes e limites</td><td>Los autores admiten los mínimos locales, que no es como el cerebro y que Parker y LeCun llegaron a lo mismo.</td></tr>
+    <tr><td>16</td><td>De 1986 até hoje <i>(animada)</i></td><td>LeCun, LSTM, AlexNet, Transformer, ChatGPT: todo se entrena con backprop. Nobel 2024.</td></tr>
+    <tr><td>17</td><td>Quem inventou?</td><td>No fue el primero; fue el que convenció.</td></tr>
+    <tr><td>18</td><td>Hoje em código</td><td>Las mismas ecuaciones en 4 líneas; de 17 parámetros a 175 mil millones.</td></tr>
+    <tr><td>19–20</td><td>Para levar · Obrigado</td><td>Resumen en una frase y preguntas.</td></tr>
+  </table></div>
+  <p><b>Teclas:</b> → o espacio avanza (dentro de una slide animada, avanza la animación); ← retrocede; F pantalla completa; <b>A</b> abre el apéndice con las Eq. 4–9 en detalle y la tabla de hiperparámetros, por si preguntan.</p>
+</section>
+
+<!-- ================= GLOSARIO ================= -->
+<section id="glosario">
+  <h2><span class="num">Aa</span>Glosario portugués–español</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Portugués (slides)</th><th>Español</th><th>Inglés (paper)</th></tr>
+    <tr><td>camada oculta</td><td>capa oculta</td><td>hidden layer / hidden units</td></tr>
+    <tr><td>peso</td><td>peso</td><td>weight</td></tr>
+    <tr><td>viés / bias</td><td>sesgo / bias</td><td>bias</td></tr>
+    <tr><td>passo para frente / para trás</td><td>pase hacia adelante / atrás</td><td>forward / backward pass</td></tr>
+    <tr><td>erro</td><td>error</td><td>error, E</td></tr>
+    <tr><td>descida do gradiente</td><td>descenso del gradiente</td><td>gradient descent</td></tr>
+    <tr><td>taxa de aprendizado (ε)</td><td>tasa de aprendizaje</td><td>ε (learning rate)</td></tr>
+    <tr><td>momento (α)</td><td>momento</td><td>α (acceleration method)</td></tr>
+    <tr><td>varredura</td><td>pasada completa por los datos</td><td>sweep</td></tr>
+    <tr><td>mínimo local</td><td>mínimo local</td><td>local minimum</td></tr>
+    <tr><td>regra da cadeia</td><td>regla de la cadena</td><td>chain rule</td></tr>
+    <tr><td>árvore genealógica</td><td>árbol genealógico</td><td>family tree</td></tr>
+    <tr><td>sobrinho/a, tio/a</td><td>sobrino/a, tío/a</td><td>nephew/niece, uncle/aunt</td></tr>
+  </table></div>
+</section>
+
+<section id="resumen">
+  <h2><span class="num">★</span>Resumen en una frase</h2>
+  <div class="summary">En 1969 se sabía que las redes de una capa tenían límites, pero <b>nadie sabía entrenar las capas del medio</b>. En 1986, Rumelhart, Hinton y Williams mostraron cómo: medir el error en la salida, <b>pasar la culpa hacia atrás con la regla de la cadena</b> y bajar la ladera del error. Las capas del medio empezaron a <b>inventar sus propias representaciones</b>, y es el mismo procedimiento que entrena a ChatGPT hoy.</div>
+</section>
+
+<footer>
+  Fuente: D. E. Rumelhart, G. E. Hinton, R. J. Williams, “Learning representations by back-propagating errors”, <i>Nature</i> 323, 533–536 (1986), doi:10.1038/323533a0. PDF en <code>rumelhart-hinton-williams-1986.pdf</code>. El ejemplo numérico, la curva de error y el entrenamiento del XOR son nuestros. Los pesos de la red de simetría son los de la Figura 1 del paper.
+</footer>
+</div>
+</body>
+</html>
