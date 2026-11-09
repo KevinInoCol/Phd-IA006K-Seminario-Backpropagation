@@ -1,21 +1,19 @@
-# Seminario: Backpropagation (IA006K · UNICAMP)
+# Seminário: Backpropagation (IA006K · UNICAMP)
 
-Material del seminario sobre el artículo **“Learning representations by back-propagating errors”** (Rumelhart, Hinton y Williams, *Nature* 323, 533–536, 1986), para la disciplina **IA006K – Seminários sobre a História da Inteligência Artificial** (UNICAMP, 2026 – Semestre II).
+Material do seminário sobre o artigo **“Learning representations by back-propagating errors”** (Rumelhart, Hinton e Williams, *Nature* 323, 533–536, 1986), para a disciplina **IA006K – Seminários sobre a História da Inteligência Artificial** (UNICAMP, 2026 – 2º semestre).
 
-Presentación: Kevin Inofuente y Sara Reis.
+Apresentação: Kevin Inofuente e Sara Reis.
 
-## Archivos
+## Arquivos
 
-| Archivo | Contenido |
+| Arquivo | Conteúdo |
 |---|---|
-| `backprop_slides_PT.html` | Slides en portugués (versión para la clase) |
-| `backprop_slides_ES.html` | Los mismos slides traducidos al español (para estudio) |
-| `backprop_explicacion.html` | Explicación del algoritmo |
-| `tema-seminario-Backpropagation.*` | Tema del seminario |
-| `rumelhart-hinton-williams-1986.pdf` | Artículo original |
-| `deploy-slides/` | Versión publicada en Vercel |
+| `backprop_slides_PT.html` | Slides da apresentação |
+| `tema-seminario-Backpropagation.*` | Definição do tema do seminário |
+| `rumelhart-hinton-williams-1986.pdf` | Artigo original |
+| `deploy-slides/` | Versão publicada na Vercel |
 
 ## Uso
 
-Abrir cualquiera de los `backprop_slides_*.html` en el navegador.
-→ / espacio: avanzar · ← retroceder · F: pantalla completa · A: apéndice (ecuaciones).
+Abrir `backprop_slides_PT.html` no navegador.
+→ / espaço: avançar · ← voltar · F: tela cheia · A: apêndice (equações).
