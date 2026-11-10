@@ -762,7 +762,7 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
       t1: "<div style='background:var(--accent-soft);border-radius:8px;padding:6px 10px;margin:0 0 10px;font-size:16px'>⚠️ <b>Notação do artigo:</b> <b>unidade</b> = neurônio (<i>neurone-like unit</i>). <b>x</b> já não é a entrada. <b>x<sub>j</sub></b> é a <b>soma</b> que chega à unidade j, e <b>y</b> é a <b>saída</b> de qualquer unidade. As entradas x₁, x₂ do XOR aqui se chamariam y₁, y₂.</div>Cada unidade <b>j</b> recebe a saída <b>y<sub>i</sub></b> de cada unidade de baixo.<br>Cada fio tem um <b>peso w<sub>ji</sub></b>: multiplica o que chega.<br>A unidade <b>soma</b> tudo e obtém <b>x<sub>j</sub></b>. Depois a sigmoide (passo 4) a transforma em sua saída <b>y<sub>j</sub></b>, que sobe para a camada de cima.<br>Por isso entradas e saídas usam a letra <b>y</b>: toda entrada é a saída de outra unidade.<br><br>Aqui: 1 · 0,8 + 0,5 · (−0,4) = <b>0,6</b>.",
       t2: "O <b>bias</b> é mais um fio que sai de uma entrada que <b>sempre vale 1</b>.<br>O peso dele é o bias (aqui <b>0,1</b>), então contribui 1 · 0,1 = 0,1.<br><br>A soma passa de 0,6 para <b>0,7</b>. Como é só mais um peso, a rede o aprende igual aos outros.",
       t3: (x, y) => `Depois a unidade <b>“aperta”</b> a soma com a sigmoide: qualquer número fica entre <b>0 e 1</b>.<br><br>Soma muito negativa → quase 0.<br>Soma muito positiva → quase 1.<br>Nossa soma <b>${x}</b> → <b>y<sub>j</sub> = ${y}</b>.<br><br>Esse <b>y<sub>j</sub></b> é o que a unidade envia para cima.`,
-      t4: (y, q, s) => `Por que não o degrau do perceptron? Para aprender é preciso saber <b>quanto a saída muda</b> se um peso se move um pouco. Isso é a <b>inclinação</b>.<br><br>Degrau: inclinação <b>0</b> (ou infinita no salto). Não dá pistas.<br>Sigmoide: sempre tem inclinação. Aqui vale y<sub>j</sub>(1 − y<sub>j</sub>) = ${y} · ${q} = <b>${s}</b>.`,
+      t4: (y, q, s) => `Para aprender é preciso saber <b>quanto a saída muda</b> se um peso se move um pouco: a <b>inclinação</b>.<br>Degrau: inclinação <b>0</b> (ou infinita no salto). Não dá pistas.<br>Sigmoide: sempre tem inclinação. Sua <b>derivada</b>:<div style="background:var(--fwd-soft);border-radius:8px;padding:6px 10px;margin:6px 0;font-size:1.1em"><math display="block"><mrow><mfrac><mrow><mi>d</mi><msub><mi>y</mi><mi>j</mi></msub></mrow><mrow><mi>d</mi><msub><mi>x</mi><mi>j</mi></msub></mrow></mfrac><mo>=</mo><mfrac><msup><mi>e</mi><mrow><mo>−</mo><msub><mi>x</mi><mi>j</mi></msub></mrow></msup><msup><mrow><mo>(</mo><mn>1</mn><mo>+</mo><msup><mi>e</mi><mrow><mo>−</mo><msub><mi>x</mi><mi>j</mi></msub></mrow></msup><mo>)</mo></mrow><mn>2</mn></msup></mfrac><mo>=</mo><msub><mi>y</mi><mi>j</mi></msub><mo stretchy="false">(</mo><mn>1</mn><mo>−</mo><msub><mi>y</mi><mi>j</mi></msub><mo stretchy="false">)</mo></mrow></math></div>Aqui: ${y} · ${q} = <b>${s}</b>. No máximo vale 0,25: nunca é infinita.<br>A forma y<sub>j</sub>(1 − y<sub>j</sub>) reaproveita o y<sub>j</sub> já calculado, sem outra exponencial.`,
       t5: "O <b>erro</b> compara o que a rede deu (<b>y</b>) com o desejado (<b>d</b>) em cada exemplo <b>c</b>.<br><br>A diferença é elevada <b>ao quadrado</b> (a área vermelha): assim os erros grandes pesam muito mais e o sinal não importa.<br>Somam-se todos os exemplos e divide-se por 2.<br><br><b>Objetivo: E o menor possível.</b>"
     };
     const M = [`<math><mrow><msub><mi>x</mi><mi>j</mi></msub><mo>=</mo><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>y</mi><mi>i</mi></msub><msub><mi>w</mi><mrow><mi>j</mi><mi>i</mi></mrow></msub></mrow></math>`, `<math><mrow><msub><mi>y</mi><mi>j</mi></msub><mo>=</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><msup><mi>e</mi><mrow><mo>−</mo><msub><mi>x</mi><mi>j</mi></msub></mrow></msup></mrow></mfrac></mrow></math>`, `<math><mrow><mi>E</mi><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><munder><mo>∑</mo><mi>c</mi></munder><munder><mo>∑</mo><mi>j</mi></munder><msup><mrow><mo stretchy="false">(</mo><msub><mi>y</mi><mrow><mi>j</mi><mo>,</mo><mi>c</mi></mrow></msub><mo>−</mo><msub><mi>d</mi><mrow><mi>j</mi><mo>,</mo><mi>c</mi></mrow></msub><mo stretchy="false">)</mo></mrow><mn>2</mn></msup></mrow></math>`];
@@ -987,6 +987,11 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
     const EDGES = [["i1", "h1", "a", 0.62, -10], ["i2", "h1", "b", 0.72, -2], ["i1", "h2", "c", 0.72, 18], ["i2", "h2", "e", 0.62, 22], ["h1", "o", "u", 0.5, -12], ["h2", "o", "v", 0.5, 26]];
     function base(h, o) {
       const { el, txt } = h;
+      [80, 300, 510].forEach(cx => el("rect", { x: cx - 52, y: 26, width: 104, height: 310, rx: 12, fill: "var(--bg)" }));
+      txt(300, 18, "camada oculta: 2 neurônios", { "text-anchor": "middle", style: "font-size:12px;font-weight:700;fill:var(--accent)" });
+      txt(510, 18, "saída: 1 neurônio", { "text-anchor": "middle", style: "font-size:12px;font-weight:700;fill:var(--accent)" });
+      txt(80, 18, "entradas", { "text-anchor": "middle", style: "font-size:12px;font-weight:700;fill:var(--muted)" });
+      txt(80, 318, "(não são neurônios)", { "text-anchor": "middle", style: "font-size:11px;fill:var(--muted)" });
       EDGES.forEach(([s, tg, k, f, dy]) => {
         const [x1_, y1_] = P[s], [x2_, y2_] = P[tg];
         const col = (o.edgeCol && o.edgeCol[k]) || LINE;
@@ -1005,10 +1010,11 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
       node("i1", "x₁", "1"); node("i2", "x₂", "0");
       node("h1", "h₁", o.h1, o.h1 ? "var(--fwd-soft)" : null); node("h2", "h₂", o.h2, o.h2 ? "var(--fwd-soft)" : null);
       node("o", "y", o.y, o.y ? "var(--fwd-soft)" : null);
+      ["h1", "h2", "o"].forEach(k => el("circle", { cx: P[k][0], cy: P[k][1], r: 35, fill: "none", stroke: ACC, "stroke-width": 2, "stroke-dasharray": "6 4" }));
       txt(300, 60, `bias ${f2(o.b1 != null ? o.b1 : W.b1, o.b1 != null ? 3 : 1)}`, { "text-anchor": "middle", style: "font-size:12px" });
       txt(300, 300, `bias ${f2(o.b2 != null ? o.b2 : W.b2, o.b2 != null ? 3 : 1)}`, { "text-anchor": "middle", style: "font-size:12px" });
       txt(510, 130, `bias ${f2(o.bo != null ? o.bo : W.bo, o.bo != null ? 3 : 1)}`, { "text-anchor": "middle", style: "font-size:12px" });
-      txt(565, 186, "d = 1", { "text-anchor": "middle", style: "font-size:15px;font-weight:700;fill:var(--accent)" });
+      txt(578, 186, "d = 1", { "text-anchor": "middle", style: "font-size:15px;font-weight:700;fill:var(--accent)" });
     }
     const note = (h, x, y, lines, col, delay = 300) => {
       const g = h.el("g", {});
@@ -1018,11 +1024,11 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
     const fwd = { h1: f2(h1), h2: f2(h2), y: f2(y) };
     stepper("num", [
       { name: "A rede", dur: 6000,
-        text: "Uma rede mínima: 2 entradas, 2 unidades ocultas, 1 saída. Os números nas linhas são os <b>pesos</b>, inventados. Entrada <b>(1, 0)</b>; para o XOR, a resposta certa é <b>d = 1</b>.",
+        text: "Uma rede mínima com <b>3 camadas</b>:<br>• <b>entradas</b> x₁, x₂: não são neurônios, só entregam os dados.<br>• <b>camada oculta</b>: 2 neurônios, h₁ e h₂.<br>• <b>saída</b>: 1 neurônio, y.<br>Cada neurônio (com anel) soma e aplica a sigmoide. Os números nas linhas são os <b>pesos</b>, inventados.<br>Entrada <b>(1, 0)</b>; para o XOR, a resposta certa é <b>d = 1</b>.<div style='background:var(--accent-soft);border-radius:8px;padding:6px 10px;margin:8px 0 0;font-size:15px'>⚠️ Nos passos seguintes, em <b>∂E/∂x</b> o <b>x</b> é a <b>soma</b> que chega a um neurônio (notação do artigo), não as entradas x₁, x₂.</div>",
         draw(h) { base(h, {}); } },
       { name: "Para frente: ocultas", dur: 7000,
         text: `<span class="fwd">Eq. 1</span>: cada oculta soma entradas × pesos + bias.<br>h₁: 1·0,5 + 0·(−0,4) + 0,1 = <b>0,60</b><br>h₂: 1·0,3 + 0·0,8 − 0,2 = <b>0,10</b><br><span class="fwd">Eq. 2</span>: a sigmoide aperta entre 0 e 1:<br>h₁ = σ(0,60) = <b>${f2(h1)}</b> · h₂ = σ(0,10) = <b>${f2(h2)}</b>`,
-        draw(h) { base(h, { h1: f2(h1), h2: f2(h2), edgeCol: { a: FWD, b: FWD, c: FWD, e: FWD } }); note(h, 300, 34, ["soma = 0,60"], FWD); note(h, 300, 330, ["soma = 0,10"], FWD); } },
+        draw(h) { base(h, { h1: f2(h1), h2: f2(h2), edgeCol: { a: FWD, b: FWD, c: FWD, e: FWD } }); note(h, 405, 62, ["soma = 0,60"], FWD); note(h, 405, 300, ["soma = 0,10"], FWD); } },
       { name: "Para frente: saída", dur: 6000,
         text: `Mesma coisa na saída:<br>0,65·0,7 + 0,52·(−0,6) + 0,2 = <b>${f2(no)}</b><br>σ(${f2(no)}) = <b>${f2(y)}</b>.<br>A rede responde <b>${f2(y)}</b>, mas devia ser <b>1</b>.`,
         draw(h) { base(h, { ...fwd, edgeCol: { u: FWD, v: FWD } }); note(h, 510, 240, [`soma = ${f2(no)}`], FWD); } },
@@ -1037,7 +1043,7 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
         draw(h) { base(h, { ...fwd, edgeCol: { u: BWD, v: BWD }, wcol: { u: "var(--bwd)", v: "var(--bwd)" }, wlab: { u: `∂E/∂w = ${f2(gu, 3)}`, v: `∂E/∂w = ${f2(gv, 3)}` } }); note(h, 510, 240, [`∂E/∂x = ${f2(dxo, 3)}`], BWD, 0); } },
       { name: "A culpa desce", dur: 8000,
         text: `<span class="bwd">Eq. 7</span>: a culpa desce pelos mesmos pesos:<br>h₁: ${f2(dxo, 3)} · 0,7 = <b>${f2(dh1, 3)}</b><br>h₂: ${f2(dxo, 3)} · (−0,6) = <b>${fs(dh2)}</b><br><span class="bwd">Eq. 5</span> de novo (sigmoide):<br>h₁: <b>${f2(dx1, 3)}</b> · h₂: <b>${fs(dx2)}</b><br>h₂ tem sinal contrário: o peso dela para a saída é negativo, então ela deve <b>descer</b>.`,
-        draw(h) { base(h, { ...fwd, edgeCol: { u: BWD, v: BWD } }); note(h, 300, 26, [`∂E/∂y = ${f2(dh1, 3)}`, `∂E/∂x = ${f2(dx1, 3)}`], BWD); note(h, 300, 318, [`∂E/∂y = ${fs(dh2)}`, `∂E/∂x = ${fs(dx2)}`], BWD, 600); } },
+        draw(h) { base(h, { ...fwd, edgeCol: { u: BWD, v: BWD } }); note(h, 405, 56, [`∂E/∂y = ${f2(dh1, 3)}`, `∂E/∂x = ${f2(dx1, 3)}`], BWD); note(h, 405, 290, [`∂E/∂y = ${fs(dh2)}`, `∂E/∂x = ${fs(dx2)}`], BWD, 600); } },
       { name: "Atualizar", dur: 9000,
         text: `<span class="fwd">Eq. 8</span>, com ε = 0,5: peso novo = peso − ε · ∂E/∂w.<br>0,7 → <b>${f2(N.u, 3)}</b> · −0,6 → <b>${f2(N.v, 3)}</b><br>0,5 → <b>${f2(N.a, 3)}</b> · 0,3 → <b>${f2(N.c, 3)}</b><br>Os pesos que saem de x₂ <b>não mudam</b>: x₂ = 0, não teve culpa.<br>Nova saída: <b>${f2(y2, 3)}</b> (era ${f2(y, 3)}). Erro: ${f2(E, 3)} → <b>${f2(E2, 3)}</b>. Repetindo muitas vezes, chega perto de 1.`,
         draw(h) { base(h, { y: f2(y2), wcol: { a: "var(--fwd)", c: "var(--fwd)", u: "var(--fwd)", v: "var(--fwd)" }, wlab: { a: f2(N.a, 3), c: f2(N.c, 3), u: f2(N.u, 3), v: f2(N.v, 3) }, b1: N.b1, b2: N.b2, bo: N.bo }); note(h, 510, 240, [`E: ${f2(E, 3)} → ${f2(E2, 3)}`], FWD); } }
