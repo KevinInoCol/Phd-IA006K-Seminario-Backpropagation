@@ -235,18 +235,12 @@
 <!-- 7 · Ecuaciones 1–3 -->
 <section class="slide">
   <header class="sh"><span class="kick">2 · O artigo · passo para frente</span><h2><span class="snum">2</span>A rede: somar, “apertar” e medir o erro</h2></header>
-  <div class="eqgrid">
-    <div class="eq"><div class="eqrow"><math><mrow><msub><mi>x</mi><mi>j</mi></msub><mo>=</mo><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>y</mi><mi>i</mi></msub><msub><mi>w</mi><mrow><mi>j</mi><mi>i</mi></mrow></msub></mrow></math><span class="eqnum">(1)</span></div>
-      <p>Cada unidade <i>j</i> <b>soma</b> o que recebe: a saída <i>y<sub>i</sub></i> de cada vizinho de baixo vezes o peso <i>w<sub>ji</sub></i>. O <i>bias</i> é só mais uma entrada, sempre igual a 1.</p></div>
-    <div class="eq"><div class="eqrow"><math><mrow><msub><mi>y</mi><mi>j</mi></msub><mo>=</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><msup><mi>e</mi><mrow><mo>−</mo><msub><mi>x</mi><mi>j</mi></msub></mrow></msup></mrow></mfrac></mrow></math><span class="eqnum">(2)</span></div>
-      <p>Depois <b>“aperta”</b> a soma entre 0 e 1 com a sigmoide. Diferente do degrau do perceptron, ela é <b>suave</b>: tem inclinação em todo ponto.</p></div>
+  <div class="anim">
+    <div class="a-left"><div class="ecchips" id="eqs-chips"></div><svg id="eqs-svg" viewBox="0 0 600 340" role="img" aria-label="Equações 1 a 3 passo a passo"></svg></div>
+    <div class="a-right"><div class="ectext" id="eqs-text" aria-live="polite"></div>
+      <div class="ecctrl"><button type="button" id="eqs-prev">◀</button><button type="button" id="eqs-play">▶ Reproduzir tudo</button><button type="button" id="eqs-next">▶</button></div>
+      <p class="cap">O artigo (p. 534): serve qualquer função cuja inclinação nunca seja infinita (“derivada limitada”); a sigmoide é só a escolha usada.</p></div>
   </div>
-  <div class="eqgrid">
-    <svg viewBox="0 0 520 190" role="img" aria-label="Degrau e sigmoide" style="width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card)" id="sig-svg"></svg>
-    <div class="eq"><div class="eqrow"><math><mrow><mi>E</mi><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><munder><mo>∑</mo><mi>c</mi></munder><munder><mo>∑</mo><mi>j</mi></munder><msup><mrow><mo stretchy="false">(</mo><msub><mi>y</mi><mrow><mi>j</mi><mo>,</mo><mi>c</mi></mrow></msub><mo>−</mo><msub><mi>d</mi><mrow><mi>j</mi><mo>,</mo><mi>c</mi></mrow></msub><mo stretchy="false">)</mo></mrow><mn>2</mn></msup></mrow></math><span class="eqnum">(3)</span></div>
-      <p>O <b>erro total</b>: para cada exemplo <i>c</i> e cada saída <i>j</i>, a diferença entre o que a rede deu (<i>y</i>) e o desejado (<i>d</i>), ao quadrado. <b>Objetivo: deixar <i>E</i> o menor possível.</b></p></div>
-  </div>
-  <p class="cap">O artigo (p. 534): qualquer função com derivada limitada serve; a sigmoide é só a escolha usada.</p>
 </section>
 
 <!-- 8 · Ejemplo con números -->
@@ -754,23 +748,223 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
     ]);
   })();
 
-  // ===== Slide 7: escalón vs sigmoide =====
+  // ===== Slide 7: Ec. 1–3 animadas (sumar, bias, aplastar, suave, error) =====
   (function () {
-    const svg = document.getElementById("sig-svg");
-    const h = helpers(svg, []);
-    const X = x => 60 + (x + 6) / 12 * 420, Y = y => 160 - y * 125;
-    h.el("line", { x1: X(-6), y1: Y(0), x2: X(6), y2: Y(0), stroke: LINE });
-    h.el("line", { x1: X(0), y1: Y(-0.05), x2: X(0), y2: Y(1.08), stroke: LINE });
-    h.txt(X(0) - 6, Y(1) + 4, "1", { "text-anchor": "end", style: "font-size:12px" });
-    h.txt(X(6), Y(0) + 18, "x", { "text-anchor": "end", style: "font-size:13px" });
-    h.el("path", { d: `M${X(-6)} ${Y(0)} H${X(0)} V${Y(1)} H${X(6)}`, fill: "none", stroke: BWD, "stroke-width": 3, "stroke-dasharray": "6 4" });
-    let d = "";
-    for (let x = -6; x <= 6.001; x += 0.1) d += (d ? "L" : "M") + X(x).toFixed(1) + " " + Y(sig(x)).toFixed(1);
-    h.el("path", { d, fill: "none", stroke: ACC, "stroke-width": 3.5 });
-    h.txt(X(-5.6), Y(0.85), "degrau (perceptron)", { style: "font-size:13px;fill:var(--bwd);font-weight:600" });
-    h.txt(X(-5.6), Y(0.68), "inclinação 0 ou infinita", { style: "font-size:12px" });
-    h.txt(X(1.4), Y(0.3), "sigmoide (Eq. 2)", { style: "font-size:13px;fill:var(--accent);font-weight:600" });
-    h.txt(X(1.4), Y(0.15), "suave: dá para derivar", { style: "font-size:12px" });
+    const T = {
+      n6: "Outras funções", stepX: "degrau ✗", sigL: "sigmoide (0 a 1)", tanhL: "tanh (−1 a 1)", linL: "linear ✗",
+      t6: "O artigo diz que serve qualquer função com <b>“derivada limitada”</b>: sua <b>inclinação nunca é infinita</b>. O degrau falha: no salto a inclinação é infinita, e no resto é 0.<br><br>Opções dos anos 80:<br>• <b>sigmoide</b> (0 a 1): a do artigo.<br>• <b>tanh</b>, tangente hiperbólica (−1 a 1): a mesma forma, centrada em 0. Le Cun a usou no fim dos anos 80.<br>• <b>linear</b>: tem derivada limitada, mas várias camadas lineares equivalem a uma só, então não resolve o XOR.<br><br>A <b>ReLU</b>, a mais usada hoje, só se difundiu por volta de 2010.",
+      below: "saídas das unidades de baixo (i)", unitj: "unidade j (Σ + sigmoide)", zoomj: "zoom na unidade j do mapa (aqui: baixo = esquerda)", sigbox: "sigmoide (passo 4)", up1: "↑ sobe para a camada de cima,", up2: "onde será um yᵢ", always1: "sempre 1",
+      sumx: "soma xⱼ", outy: "saída yⱼ", ex: "exemplo",
+      step: "degrau (perceptron)", sigm: "sigmoide (Eq. 2)",
+      slopeS: s => [`inclinação ${s}`, "indica para onde mover"], slope0: ["inclinação 0", "não indica nada"],
+      goal: "objetivo: que os quadrados (e E) sejam os menores possíveis",
+      n1: "Somar (Eq. 1)", n3: "Apertar (Eq. 2)", n4: "Por que suave?", n5: "Erro (Eq. 3)",
+      t1: "<div style='background:var(--accent-soft);border-radius:8px;padding:6px 10px;margin:0 0 10px;font-size:16px'>⚠️ <b>Notação do artigo:</b> <b>unidade</b> = neurônio (<i>neurone-like unit</i>). <b>x</b> já não é a entrada. <b>x<sub>j</sub></b> é a <b>soma</b> que chega à unidade j, e <b>y</b> é a <b>saída</b> de qualquer unidade. As entradas x₁, x₂ do XOR aqui se chamariam y₁, y₂.</div>Cada unidade <b>j</b> recebe a saída <b>y<sub>i</sub></b> de cada unidade de baixo.<br>Cada fio tem um <b>peso w<sub>ji</sub></b>: multiplica o que chega.<br>A unidade <b>soma</b> tudo e obtém <b>x<sub>j</sub></b>. Depois a sigmoide (passo 4) a transforma em sua saída <b>y<sub>j</sub></b>, que sobe para a camada de cima.<br>Por isso entradas e saídas usam a letra <b>y</b>: toda entrada é a saída de outra unidade.<br><br>Aqui: 1 · 0,8 + 0,5 · (−0,4) = <b>0,6</b>.",
+      t2: "O <b>bias</b> é mais um fio que sai de uma entrada que <b>sempre vale 1</b>.<br>O peso dele é o bias (aqui <b>0,1</b>), então contribui 1 · 0,1 = 0,1.<br><br>A soma passa de 0,6 para <b>0,7</b>. Como é só mais um peso, a rede o aprende igual aos outros.",
+      t3: (x, y) => `Depois a unidade <b>“aperta”</b> a soma com a sigmoide: qualquer número fica entre <b>0 e 1</b>.<br><br>Soma muito negativa → quase 0.<br>Soma muito positiva → quase 1.<br>Nossa soma <b>${x}</b> → <b>y<sub>j</sub> = ${y}</b>.<br><br>Esse <b>y<sub>j</sub></b> é o que a unidade envia para cima.`,
+      t4: (y, q, s) => `Por que não o degrau do perceptron? Para aprender é preciso saber <b>quanto a saída muda</b> se um peso se move um pouco. Isso é a <b>inclinação</b>.<br><br>Degrau: inclinação <b>0</b> (ou infinita no salto). Não dá pistas.<br>Sigmoide: sempre tem inclinação. Aqui vale y<sub>j</sub>(1 − y<sub>j</sub>) = ${y} · ${q} = <b>${s}</b>.`,
+      t5: "O <b>erro</b> compara o que a rede deu (<b>y</b>) com o desejado (<b>d</b>) em cada exemplo <b>c</b>.<br><br>A diferença é elevada <b>ao quadrado</b> (a área vermelha): assim os erros grandes pesam muito mais e o sinal não importa.<br>Somam-se todos os exemplos e divide-se por 2.<br><br><b>Objetivo: E o menor possível.</b>"
+    };
+    const M = [`<math><mrow><msub><mi>x</mi><mi>j</mi></msub><mo>=</mo><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>y</mi><mi>i</mi></msub><msub><mi>w</mi><mrow><mi>j</mi><mi>i</mi></mrow></msub></mrow></math>`, `<math><mrow><msub><mi>y</mi><mi>j</mi></msub><mo>=</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><msup><mi>e</mi><mrow><mo>−</mo><msub><mi>x</mi><mi>j</mi></msub></mrow></msup></mrow></mfrac></mrow></math>`, `<math><mrow><mi>E</mi><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><munder><mo>∑</mo><mi>c</mi></munder><munder><mo>∑</mo><mi>j</mi></munder><msup><mrow><mo stretchy="false">(</mo><msub><mi>y</mi><mrow><mi>j</mi><mo>,</mo><mi>c</mi></mrow></msub><mo>−</mo><msub><mi>d</mi><mrow><mi>j</mi><mo>,</mo><mi>c</mi></mrow></msub><mo stretchy="false">)</mo></mrow><mn>2</mn></msup></mrow></math>`];
+    const big = m => `<div style="font-size:1.35em;margin:0 0 8px">${m}</div>`;
+    // --- Ec. 1 y bias: misma red pequeña ---
+    const Y1 = 1, Y2 = 0.5, W1 = 0.8, W2 = -0.4, B = 0.1;
+    function sumNet({ el, txt, fade }, withBias) {
+      const S = [270, 160], node = (x, y, r, label, fill, stroke) => { el("circle", { cx: x, cy: y, r, fill: fill || "var(--card)", stroke: stroke || INK, "stroke-width": 2 }); txt(x, y + 6, label, { "text-anchor": "middle", style: "font-size:18px;font-weight:700;fill:var(--ink)" }); };
+      txt(40, 24, T.below, { style: "font-size:12px" });
+      txt(590, 24, T.zoomj, { "text-anchor": "end", style: "font-size:12px;fill:var(--accent);font-weight:600" });
+      // la unidad j completa: Σ + sigmoide
+      el("rect", { x: 228, y: 104, width: 220, height: 112, rx: 14, fill: "none", stroke: ACC, "stroke-width": 2, "stroke-dasharray": "7 5" });
+      txt(338, 98, T.unitj, { "text-anchor": "middle", style: "font-size:12px;fill:var(--accent);font-weight:600" });
+      el("line", { x1: 134, y1: 60, x2: S[0] - 26, y2: S[1] - 15, stroke: ACC, "stroke-width": 3 });
+      el("line", { x1: 134, y1: 160, x2: S[0] - 30, y2: S[1], stroke: BWD, "stroke-width": 3 });
+      txt(232, 82, "w = " + f2(W1, 1), { "text-anchor": "middle", style: "font-size:15px;font-weight:700;fill:var(--accent)" });
+      txt(172, 150, "w = " + f2(W2, 1), { "text-anchor": "middle", style: "font-size:15px;font-weight:700;fill:var(--bwd)" });
+      node(110, 60, 24, "y₁"); node(110, 160, 24, "y₂");
+      txt(76, 66, "1", { "text-anchor": "end", style: "font-size:17px;font-weight:700;fill:var(--accent)" });
+      txt(76, 166, "0,5", { "text-anchor": "end", style: "font-size:17px;font-weight:700;fill:var(--accent)" });
+      if (withBias) {
+        const parts = [el("line", { x1: 134, y1: 260, x2: S[0] - 24, y2: S[1] + 18, stroke: FWD, "stroke-width": 3.5 }),
+          txt(190, 250, "b = " + f2(B, 1), { "text-anchor": "middle", style: "font-size:15px;font-weight:700;fill:var(--fwd)" }),
+          el("circle", { cx: 110, cy: 260, r: 24, fill: "var(--fwd-soft)", stroke: FWD, "stroke-width": 2 }),
+          txt(110, 266, "1", { "text-anchor": "middle", style: "font-size:18px;font-weight:700;fill:var(--ink)" }),
+          txt(110, 302, T.always1, { "text-anchor": "middle", style: "font-size:12px;fill:var(--fwd);font-weight:600" })];
+        parts.forEach(p => fade(p, 400));
+      }
+      node(S[0], S[1], 28, "Σ", "var(--accent-soft)");
+      const xj = Y1 * W1 + Y2 * W2 + (withBias ? B : 0), yj = sig(xj), tx = withBias ? 1800 : 2400, ty = tx + 900;
+      // Σ → xⱼ → sigmoide
+      el("line", { x1: S[0] + 28, y1: S[1], x2: 362, y2: S[1], stroke: INK, "stroke-width": 2 });
+      fade(txt(331, S[1] - 10, "xⱼ = " + f2(xj, 1), { "text-anchor": "middle", style: "font-size:14px;font-weight:700;fill:var(--ink)" }), tx);
+      const g = [el("rect", { x: 362, y: 132, width: 64, height: 56, rx: 8, fill: "var(--card)", stroke: INK, "stroke-width": 2 })];
+      let d = "";
+      for (let x = -6; x <= 6.001; x += 0.5) d += (d ? "L" : "M") + (368 + (x + 6) / 12 * 52).toFixed(1) + " " + (182 - sig(x) * 44).toFixed(1);
+      g.push(el("path", { d, fill: "none", stroke: ACC, "stroke-width": 2.5 }));
+      g.push(txt(394, 204, T.sigbox, { "text-anchor": "middle", style: "font-size:11px" }));
+      g.forEach(n => fade(n, ty - 400));
+      // sigmoide → yⱼ (sube)
+      [el("line", { x1: 426, y1: S[1], x2: 458, y2: S[1], stroke: INK, "stroke-width": 2 }),
+       el("polygon", { points: `458,${S[1] - 8} 472,${S[1]} 458,${S[1] + 8}`, fill: INK }),
+       txt(478, S[1] + 8, "yⱼ = " + f2(yj), { style: "font-size:20px;font-weight:700;fill:var(--fwd)" }),
+       txt(592, S[1] + 76, T.up1, { "text-anchor": "end", style: "font-size:12px;fill:var(--fwd);font-weight:600" }),
+       txt(592, S[1] + 92, T.up2, { "text-anchor": "end", style: "font-size:12px;fill:var(--fwd);font-weight:600" })
+      ].forEach(n => fade(n, ty));
+      // ecuación de abajo
+      const terms = ["1 · 0,8", " + 0,5 · (−0,4)"].concat(withBias ? [" + 1 · 0,1"] : []);
+      const t = txt(300, 326, "", { "text-anchor": "middle", style: "font-size:19px;fill:var(--ink)" });
+      const NS = "http://www.w3.org/2000/svg";
+      t.appendChild(Object.assign(document.createElementNS(NS, "tspan"), { textContent: "xⱼ = " }));
+      terms.forEach((s, k) => {
+        const sp = document.createElementNS(NS, "tspan"); sp.textContent = s;
+        if (k === 2) sp.setAttribute("style", "fill:var(--fwd);font-weight:700");
+        t.appendChild(sp); if (!withBias) fade(sp, 900 + k * 600);
+      });
+      const r = document.createElementNS(NS, "tspan"); r.textContent = " = " + f2(xj, 1); r.setAttribute("style", "font-weight:700");
+      t.appendChild(r); fade(r, tx);
+    }
+    // --- Ec. 2: ejes de la sigmoide ---
+    const X = x => 70 + (x + 6) / 12 * 470, Yp = y => 270 - y * 210;
+    const xj = 0.7, yj = sig(xj), slope = yj * (1 - yj);
+    function axes({ el, txt }) {
+      el("line", { x1: X(-6), y1: Yp(0), x2: X(6), y2: Yp(0), stroke: LINE });
+      el("line", { x1: X(0), y1: Yp(-0.03), x2: X(0), y2: Yp(1.08), stroke: LINE });
+      txt(X(0) - 6, Yp(1) + 4, "1", { "text-anchor": "end", style: "font-size:12px" });
+      txt(X(0) - 6, Yp(0) + 4, "0", { "text-anchor": "end", style: "font-size:12px" });
+      txt(X(6), Yp(0) + 42, T.sumx, { "text-anchor": "end", style: "font-size:13px" });
+      txt(X(-6), Yp(1.08), T.outy, { style: "font-size:13px" });
+    }
+    function sigPath({ el }) {
+      let d = "";
+      for (let x = -6; x <= 6.001; x += 0.1) d += (d ? "L" : "M") + X(x).toFixed(1) + " " + Yp(sig(x)).toFixed(1);
+      return el("path", { d, fill: "none", stroke: ACC, "stroke-width": 3.5 });
+    }
+    // --- Ec. 3: ejemplos ---
+    const EX = [[yj, 1], [0.2, 0], [0.9, 1]];
+    const NSs = "http://www.w3.org/2000/svg";
+    function subs(svg) {
+      svg.querySelectorAll("text, tspan").forEach(t => {
+        if (t.children.length || !/[ⱼᵢ]/.test(t.textContent)) return;
+        const parts = t.textContent.split(/([ⱼᵢ]+)/); t.textContent = "";
+        parts.forEach(pt => {
+          if (!pt) return;
+          const sp = document.createElementNS(NSs, "tspan");
+          sp.textContent = pt.replace(/ⱼ/g, "j").replace(/ᵢ/g, "i");
+          if (/[ⱼᵢ]/.test(pt)) { sp.setAttribute("baseline-shift", "sub"); sp.setAttribute("font-size", "70%"); }
+          t.appendChild(sp);
+        });
+      });
+    }
+    const STAGES = [
+      { name: "O mapa", dur: 12000, text: "Os autores pensam a rede <b>em camadas, de baixo para cima</b>:<br>• <b>embaixo</b>: unidades de entrada (recebem os dados).<br>• <b>no meio</b>: unidades ocultas.<br>• <b>em cima</b>: unidades de saída.<br><br>Os dados <b>sobem</b>. Cada unidade <b>j</b> recebe as saídas das unidades <b>i</b> ligadas abaixo dela. Para uma oculta, são as entradas; para a de saída, são as ocultas.<br><br>Não há conexões dentro de uma camada nem para baixo. O <b>erro</b> viajará ao contrário, de cima para baixo: daí <i>back-propagation</i>.<br><br>O passo seguinte faz <b>zoom na unidade j</b>.",
+        draw({ el, txt, fade }) {
+          const L = { inp: "entrada (embaixo)", hid: "ocultas (meio)", out: "saída (em cima)", zoom: "unidade j", ilab: "i = cada unidade de baixo ligada a j (suas saídas yᵢ chegam a j)", fwd: "dados para frente", bwd: "erro para trás" };
+          const IN = [[180, 285], [300, 285], [420, 285]], HID = [[240, 172], [360, 172]], OUT = [[300, 60]], J = HID[0];
+          // capas (etiquetas a la izquierda)
+          [[285, L.inp, 0], [172, L.hid, 500], [60, L.out, 1000]].forEach(([y, s, t]) =>
+            fade(txt(28, y + 5, s, { style: "font-size:13px;font-weight:600;fill:var(--muted)" }), t));
+          // conexiones
+          IN.forEach(a => HID.forEach(b => { const toJ = b === J;
+            fade(el("line", { x1: a[0], y1: a[1] - 20, x2: b[0], y2: b[1] + 22, stroke: toJ ? ACC : LINE, "stroke-width": toJ ? 3 : 2 }), toJ ? 1700 : 400); }));
+          HID.forEach(a => fade(el("line", { x1: a[0], y1: a[1] - 22, x2: OUT[0][0], y2: OUT[0][1] + 22, stroke: LINE, "stroke-width": 2 }), 900));
+          // unidades
+          const unit = (p, r, fill, stroke, t) => fade(el("circle", { cx: p[0], cy: p[1], r, fill, stroke, "stroke-width": 2 }), t);
+          IN.forEach((p, k) => { unit(p, 20, "var(--card)", INK, 0); fade(txt(p[0], p[1] + 5, "i" + (k + 1), { "text-anchor": "middle", style: "font-size:13px;font-weight:700;fill:var(--ink)" }), 0); });
+          HID.forEach(p => unit(p, 22, "var(--card)", INK, 500));
+          unit(OUT[0], 22, "var(--card)", INK, 1000);
+          // unidad j resaltada
+          fade(el("circle", { cx: J[0], cy: J[1], r: 22, fill: "var(--accent-soft)", stroke: ACC, "stroke-width": 3 }), 1700);
+          fade(txt(J[0], J[1] + 6, "j", { "text-anchor": "middle", style: "font-size:17px;font-weight:700;fill:var(--accent)" }), 1700);
+          fade(txt(J[0] - 32, J[1] - 14, L.zoom, { "text-anchor": "end", style: "font-size:13px;font-weight:700;fill:var(--accent)" }), 2100);
+          fade(txt(300, 328, L.ilab, { "text-anchor": "middle", style: "font-size:13px;fill:var(--accent);font-weight:600" }), 2100);
+          // flechas: adelante (sube) y atrás (baja)
+          const arrow = (x, y1, y2, col, t) => {
+            fade(el("line", { x1: x, y1, x2: x, y2: y2 + (y2 < y1 ? 10 : -10), stroke: col, "stroke-width": 4 }), t);
+            fade(el("polygon", { points: y2 < y1 ? `${x - 9},${y2 + 12} ${x},${y2 - 4} ${x + 9},${y2 + 12}` : `${x - 9},${y2 - 12} ${x},${y2 + 4} ${x + 9},${y2 - 12}`, fill: col }), t);
+          };
+          arrow(500, 290, 55, FWD, 2600);
+          fade(txt(518, 180, L.fwd, { transform: "rotate(-90 518 180)", "text-anchor": "middle", style: "font-size:13px;font-weight:700;fill:var(--fwd)" }), 2600);
+          arrow(560, 55, 290, BWD, 3200);
+          fade(txt(578, 180, L.bwd, { transform: "rotate(-90 578 180)", "text-anchor": "middle", style: "font-size:13px;font-weight:700;fill:var(--bwd)" }), 3200);
+        } },
+      { name: T.n1, dur: 8000, text: big(M[0]) + T.t1, draw(h) { sumNet(h, false); } },
+      { name: "Bias", dur: 8000, text: big(M[0]) + T.t2, draw(h) { sumNet(h, true); } },
+      { name: T.n3, dur: 9000, text: big(M[1]) + T.t3(f2(xj, 1), f2(yj)),
+        draw(h) {
+          const { el, txt, fade } = h;
+          axes(h); sigPath(h);
+          const pts = [[-4, 300], [xj, 1100], [4, 1900]];
+          pts.forEach(([x, t], k) => {
+            const y = sig(x), col = k === 1 ? "var(--fwd)" : "var(--muted)";
+            [el("line", { x1: X(x), y1: Yp(0), x2: X(x), y2: Yp(y), stroke: col, "stroke-width": 2, "stroke-dasharray": "5 4" }),
+             el("line", { x1: X(x), y1: Yp(y), x2: X(0), y2: Yp(y), stroke: col, "stroke-width": 2, "stroke-dasharray": "5 4" }),
+             el("circle", { cx: X(x), cy: Yp(y), r: 6, fill: col }),
+             txt(X(x), Yp(0) + 20, "xⱼ = " + f2(x, 1), { "text-anchor": "middle", style: `font-size:14px;font-weight:700;fill:${col}` }),
+             txt(X(x) + (x < 0 ? 0 : 14), Yp(y) + (k === 1 ? 22 : -12), "yⱼ = " + f2(y), { "text-anchor": x < 0 ? "middle" : "start", style: `font-size:14px;font-weight:700;fill:${col}` })
+            ].forEach(n => fade(n, t));
+          });
+        } },
+      { name: T.n4, dur: 10000, text: big(M[1]) + T.t4(f2(yj), f2(1 - yj), f2(slope)),
+        draw(h) {
+          const { el, txt, fade } = h;
+          axes(h);
+          el("path", { d: `M${X(-6)} ${Yp(0)} H${X(0)} V${Yp(1)} H${X(6)}`, fill: "none", stroke: BWD, "stroke-width": 3, "stroke-dasharray": "6 4" });
+          sigPath(h);
+          txt(X(-5.7), Yp(0.9), T.step, { style: "font-size:14px;fill:var(--bwd);font-weight:700" });
+          txt(X(2.6), Yp(0.22), T.sigm, { style: "font-size:14px;fill:var(--accent);font-weight:700" });
+          const dx = 1.6;
+          [el("line", { x1: X(xj - dx), y1: Yp(yj - slope * dx), x2: X(xj + dx), y2: Yp(yj + slope * dx), stroke: FWD, "stroke-width": 3 }),
+           el("circle", { cx: X(xj), cy: Yp(yj), r: 6, fill: FWD }),
+           txt(X(xj) + 16, Yp(yj) + 30, T.slopeS(f2(slope))[0], { style: "font-size:14px;font-weight:700;fill:var(--fwd)" }),
+           txt(X(xj) + 16, Yp(yj) + 48, T.slopeS(f2(slope))[1], { style: "font-size:13px;fill:var(--fwd)" })].forEach(n => fade(n, 900));
+          [el("line", { x1: X(xj - dx), y1: Yp(1), x2: X(xj + dx), y2: Yp(1), stroke: BWD, "stroke-width": 5, opacity: 0.6 }),
+           el("circle", { cx: X(xj), cy: Yp(1), r: 6, fill: BWD }),
+           txt(X(xj - dx), Yp(1) - 28, T.slope0[0], { style: "font-size:14px;font-weight:700;fill:var(--bwd)" }),
+           txt(X(xj - dx), Yp(1) - 12, T.slope0[1], { style: "font-size:13px;fill:var(--bwd)" })].forEach(n => fade(n, 2200));
+        } },
+      { name: T.n6, dur: 11000, text: T.t6,
+        draw({ el, txt, fade }) {
+          const Xo = x => 70 + (x + 4) / 8 * 470, Yo = y => 160 - y * 105;
+          el("line", { x1: Xo(-4), y1: Yo(0), x2: Xo(4), y2: Yo(0), stroke: LINE });
+          el("line", { x1: Xo(0), y1: Yo(-1.15), x2: Xo(0), y2: Yo(1.15), stroke: LINE });
+          [1, -1].forEach(v => txt(Xo(0) - 6, Yo(v) + 4, v > 0 ? "1" : "−1", { "text-anchor": "end", style: "font-size:12px" }));
+          const curve = (f, col, w, dash, t, lab, lx, ly) => {
+            let d = "";
+            for (let x = -4; x <= 4.001; x += 0.05) d += (d ? "L" : "M") + Xo(x).toFixed(1) + " " + Yo(f(x)).toFixed(1);
+            fade(el("path", { d, fill: "none", stroke: col, "stroke-width": w, "stroke-dasharray": dash || "none" }), t);
+            fade(txt(lx, ly, lab, { style: `font-size:14px;font-weight:700;fill:${col}` }), t);
+          };
+          fade(el("path", { d: `M${Xo(-4)} ${Yo(0)} H${Xo(0)} V${Yo(1)} H${Xo(4)}`, fill: "none", stroke: BWD, "stroke-width": 3, "stroke-dasharray": "6 4" }), 200);
+          fade(txt(Xo(-3.9), Yo(0.35), T.stepX, { style: "font-size:14px;font-weight:700;fill:var(--bwd)" }), 200);
+          curve(sig, ACC, 3.5, null, 900, T.sigL, Xo(1.3), Yo(0.42));
+          curve(Math.tanh, FWD, 3.5, null, 1700, T.tanhL, Xo(-3.9), Yo(-0.75));
+          curve(x => x / 3.5, MUT, 2.5, "3 4", 2500, T.linL, Xo(2.1), Yo(1.05));
+        } },
+      { name: T.n5, dur: 11000, text: big(M[2]) + T.t5,
+        draw({ el, txt, fade }) {
+          const top = 50, bot = 250, P = v => bot - v * (bot - top);
+          let sum = 0;
+          EX.forEach(([y, d], k) => {
+            const cx = 95 + k * 175, t0 = 300 + k * 1100, e = (y - d) ** 2; sum += e;
+            const g = [];
+            g.push(txt(cx + 30, 18, T.ex + " " + (k + 1), { "text-anchor": "middle", style: "font-size:13px;font-weight:600" }));
+            g.push(el("line", { x1: cx, y1: P(0), x2: cx, y2: P(1), stroke: LINE, "stroke-width": 3 }));
+            g.push(txt(cx, P(0) + 22, "0", { "text-anchor": "middle", style: "font-size:11px" }));
+            g.push(txt(cx, P(1) - 12, "1", { "text-anchor": "middle", style: "font-size:11px" }));
+            g.forEach(n => fade(n, t0));
+            const side = Math.abs(P(y) - P(d));
+            [el("rect", { x: cx + 6, y: Math.min(P(y), P(d)), width: side, height: side, fill: "var(--bwd-soft)", stroke: BWD, "stroke-width": 1.5 }),
+             txt(cx + 12 + side, Math.min(P(y), P(d)) + side / 2 + 5, "(y − d)² = " + f2(e), { style: "font-size:13px;font-weight:700;fill:var(--bwd)" })
+            ].forEach(n => fade(n, t0 + 700));
+            [el("line", { x1: cx, y1: P(y), x2: cx, y2: P(d), stroke: BWD, "stroke-width": 4 }),
+             el("circle", { cx, cy: P(d), r: 7, fill: FWD }), txt(cx - 14, P(d) + 5, "d = " + d, { "text-anchor": "end", style: "font-size:13px;font-weight:700;fill:var(--fwd)" }),
+             el("circle", { cx, cy: P(y), r: 7, fill: ACC }), txt(cx - 14, P(y) + 5 + (Math.abs(P(y) - P(d)) < 26 ? (y < d ? 16 : -16) : 0), "y = " + f2(y), { "text-anchor": "end", style: "font-size:13px;font-weight:700;fill:var(--accent)" })
+            ].forEach(n => fade(n, t0 + 300));
+          });
+          fade(txt(300, 300, "E = ½ (" + EX.map(([y, d]) => f2((y - d) ** 2)).join(" + ") + ") = " + f2(sum / 2), { "text-anchor": "middle", style: "font-size:20px;font-weight:700;fill:var(--ink)" }), 3800);
+          fade(txt(300, 326, T.goal, { "text-anchor": "middle", style: "font-size:14px;fill:var(--accent);font-weight:600" }), 4400);
+        } }
+    ];
+    stepper("eqs", STAGES.map(st => ({ ...st, draw(h) { st.draw(h); subs(document.getElementById("eqs-svg")); } })));
   })();
 
   // ===== Slide 8: ejemplo numérico =====
