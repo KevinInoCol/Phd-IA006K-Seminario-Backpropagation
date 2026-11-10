@@ -1188,9 +1188,19 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
         info.textContent = `${label} · passo ${i} · E = ${f2(Ef(w), 3)}`;
       }));
     }
+    // ----- Tarjetas con las Ec. 8 y 9 en formato matemático -----
+    const dEdw = `<mfrac><mrow><mo>∂</mo><mi>E</mi></mrow><mrow><mo>∂</mo><mi>w</mi></mrow></mfrac>`;
+    const DW = `<mi mathvariant="normal">Δ</mi><mi>w</mi>`, MEPS = `<mrow><mo form="prefix" lspace="0" rspace="0">−</mo><mi>ε</mi></mrow>`;
+    const gcard = (tag, col, math, lines) => `<div style="border-left:4px solid var(--${col});background:var(--${col}-soft);border-radius:6px;padding:4px 10px 6px;margin:0 0 10px">`
+      + `<div style="font-size:13px;font-weight:700;color:var(--${col})">${tag}</div><div style="font-size:1.25em"><math display="block"><mrow>${math}</mrow></math></div>`
+      + lines.map(l => `<div style="font-size:16px">${l}</div>`).join("") + `</div>`;
+    const im = m => `<math style="font-size:1.15em"><mstyle displaystyle="true">${m}</mstyle></math>`;
+    const G8 = DW + `<mo>=</mo>` + MEPS + dEdw;
+    const G0 = dEdw + `<mo>=</mo><mn>0</mn><mspace width="0.6em"/><mo>⇒</mo><mspace width="0.6em"/>` + DW + `<mo>=</mo><mn>0</mn>`;
+    const G9 = DW + `<mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>=</mo>` + MEPS + dEdw + `<mo>+</mo><mi>α</mi>` + DW + `<mo stretchy="false">(</mo><mi>t</mi><mo>−</mo><mn>1</mn><mo stretchy="false">)</mo>`;
     stepper("gd", [
       { name: "Inclinação", dur: 6000,
-        text: "Imagine o erro como uma <b>paisagem</b>: cada valor do peso tem um erro. Com as Eq. 4–7 sabemos a <b>inclinação</b> ∂E/∂w no ponto onde estamos. Não vemos a paisagem inteira, só o chão sob os pés.",
+        text: gcard("A inclinação onde está a bola", "accent", dEdw, ["calculada pelas Eq. 4–7: é isso que o backprop faz"]) + "Imagine o erro como uma <b>paisagem</b>: cada valor do peso tem um erro. Não vemos a paisagem inteira, só o chão sob os pés.",
         draw(h) {
           curve(h);
           const w = 3.9, e = Ef(w), g = G(w);
@@ -1199,16 +1209,16 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
           h.txt(X(w) - 20, Y(e) - 30, `inclinação = ${f2(g)}`, { "text-anchor": "end", style: "font-size:14px;font-weight:700;fill:var(--bwd)" });
         } },
       { name: "Descer (Eq. 8)", dur: 7500,
-        text: "<b>Eq. 8</b>: Δw = −ε · ∂E/∂w. Dar um passo <b>contra</b> a inclinação, de tamanho proporcional a ela. Com ε = 0,4 a bola desce e para no fundo do vale.",
+        text: gcard("Eq. 8 · descer", "accent", G8, ["<b>−</b>: contra a inclinação (morro abaixo)", "<b>ε</b>: tamanho do passo; aqui ε = 0,4", "passo maior onde a inclinação é maior"]) + "A bola desce e para no fundo do vale, onde a inclinação vale 0.",
         draw(h) { curve(h); animate(h, run(3.9, 0.4, 0), "ε = 0,4", ACC); } },
       { name: "ε grande demais", dur: 6000,
-        text: "Se o passo é <b>grande demais</b> (ε = 3,2), a bola salta por cima do vale e cai em outro lugar. Aqui foi parar no vale pior. Escolher ε é um compromisso entre velocidade e estabilidade.",
+        text: gcard("Eq. 8 com ε grande demais", "bwd", G8, ["ε = 3,2: cada passo é 8 vezes mais longo"]) + "A bola salta por cima do vale e cai em outro lugar. Aqui foi parar no vale pior. Escolher ε é um compromisso entre <b>velocidade</b> e <b>estabilidade</b>.",
         draw(h) { curve(h); animate(h, run(3.9, 3.2, 0, 10), "ε = 3,2", BWD); } },
       { name: "Mínimo local", dur: 8500,
-        text: "Começando do outro lado, a bola para no <b>mínimo local</b>: um vale que não é o mais fundo. Ali a inclinação é zero e a Eq. 8 não manda sair. O artigo admite esse problema (p. 535).",
+        text: gcard("No fundo de qualquer vale", "bwd", G0, ["a Eq. 8 para de mover o peso"]) + "Começando do outro lado, a bola para no <b>mínimo local</b>: um vale que não é o mais fundo. Ali a inclinação é zero e a Eq. 8 não manda sair. O artigo admite esse problema (p. 535).",
         draw(h) { curve(h); animate(h, run(-3.9, 0.4, 0), "ε = 0,4", BWD); } },
       { name: "Momento (Eq. 9)", dur: 10000,
-        text: "<b>Eq. 9</b>: Δw(t) = −ε ∂E/∂w + <b>α</b> Δw(t−1). Cada passo guarda parte do anterior, como uma bola com <b>embalo</b>. Com α = 0,8, do mesmo ponto de partida, ela passa por cima da lombada e chega ao vale mais fundo. O artigo usa o momento para <b>acelerar</b>; sair de um mínimo local, como aqui, nem sempre acontece.",
+        text: gcard("Eq. 9 · momento", "accent", G9, [im(MEPS + dEdw) + ": o que a inclinação diz agora", im(`<mi>α</mi>` + DW + `<mo stretchy="false">(</mo><mi>t</mi><mo>−</mo><mn>1</mn><mo stretchy="false">)</mo>`) + ": parte do passo anterior, com α = 0,8"]) + "Cada passo guarda parte do anterior, como uma bola com <b>embalo</b>. Do mesmo ponto de partida, ela passa por cima da lombada e chega ao vale mais fundo. O artigo usa o momento para <b>acelerar</b>; sair de um mínimo local, como aqui, nem sempre acontece.",
         draw(h) { curve(h); animate(h, run(-3.9, 0.4, 0.8), "ε = 0,4 · α = 0,8", FWD); } }
     ]);
   })();
