@@ -1011,6 +1011,8 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
       node("h1", "h₁", o.h1, o.h1 ? "var(--fwd-soft)" : null); node("h2", "h₂", o.h2, o.h2 ? "var(--fwd-soft)" : null);
       node("o", "y", o.y, o.y ? "var(--fwd-soft)" : null);
       ["h1", "h2", "o"].forEach(k => el("circle", { cx: P[k][0], cy: P[k][1], r: 35, fill: "none", stroke: ACC, "stroke-width": 2, "stroke-dasharray": "6 4" }));
+      ["h1", "h2", "o"].forEach(k => { const c = el("circle", { cx: P[k][0], cy: P[k][1], r: 35, fill: "transparent", style: "cursor:pointer" }); c.addEventListener("click", () => openNum(k)); });
+      txt(510, 326, "👆 clique num neurônio", { "text-anchor": "middle", style: "font-size:12px;font-weight:600;fill:var(--accent)" });
       txt(300, 60, `bias ${f2(o.b1 != null ? o.b1 : W.b1, o.b1 != null ? 3 : 1)}`, { "text-anchor": "middle", style: "font-size:12px" });
       txt(300, 300, `bias ${f2(o.b2 != null ? o.b2 : W.b2, o.b2 != null ? 3 : 1)}`, { "text-anchor": "middle", style: "font-size:12px" });
       txt(510, 130, `bias ${f2(o.bo != null ? o.bo : W.bo, o.bo != null ? 3 : 1)}`, { "text-anchor": "middle", style: "font-size:12px" });
@@ -1022,6 +1024,71 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
       h.fade(g, delay);
     };
     const fwd = { h1: f2(h1), h2: f2(h2), y: f2(y) };
+    // ----- Modal: la neurona por dentro, con los números de este ejemplo -----
+    const NT = {
+      sub: "Exemplo da lâmina: entrada (1, 0), resposta desejada d = 1.", neuron: "neurônio", always1: "sempre 1", sigm: "sigmoide",
+      r1: "Para frente · somar (Eq. 1)", r2: "Para frente · sigmoide (Eq. 2)", r3o: "Para trás · culpa da saída (Eq. 4)", r3h: "Para trás · a culpa que desce (Eq. 7)", r4: "Para trás · atravessar a sigmoide (Eq. 5)",
+      h1: { title: "O neurônio oculto <b>h₁</b> por dentro", text: "Para frente: soma e aperta. Para trás: recebe a culpa que desce da saída pelo peso 0,7 e a multiplica pela inclinação y(1 − y)." },
+      h2: { title: "O neurônio oculto <b>h₂</b> por dentro", text: "O peso dele para a saída é negativo (−0,6), por isso a culpa que chega tem sinal contrário ao de h₁." },
+      o:  { title: "O neurônio de saída <b>y</b> por dentro", text: "As entradas dele são as saídas de h₁ e h₂. A culpa começa aqui: y − d. Depois desce para a camada oculta." }
+    };
+    const NUMN = {
+      h1: { name: "h₁", ins: [["x₁", x1, W.a], ["x₂", x2, W.b]], b: W.b1, s: n1, out: h1, gy: dh1, gx: dx1, from: [dxo, W.u] },
+      h2: { name: "h₂", ins: [["x₁", x1, W.c], ["x₂", x2, W.e]], b: W.b2, s: n2, out: h2, gy: dh2, gx: dx2, from: [dxo, W.v] },
+      o:  { name: "y",  ins: [["h₁", h1, W.u], ["h₂", h2, W.v]], b: W.bo, s: no, out: y, gy: dy, gx: dxo, from: null }
+    };
+    const fv = v => (Number.isInteger(v) ? String(v) : f2(v));
+    const fw = w => (w < 0 ? `(${f2(w, 1)})` : f2(w, 1));
+    function openNum(k) {
+      const m = document.getElementById("nmodal"), svg = document.getElementById("nm-svg"), n = NUMN[k], T = NT[k];
+      if (!m.dataset.bound) {
+        m.dataset.bound = 1;
+        m.addEventListener("click", e => { if (e.target === m) window.closeNeuronGlobal(); });
+        document.getElementById("nm-x").addEventListener("click", () => window.closeNeuronGlobal());
+      }
+      document.getElementById("nm-title").innerHTML = T.title;
+      document.getElementById("nm-sub").innerHTML = NT.sub;
+      svg.innerHTML = "";
+      const { el, txt } = helpers(svg, []);
+      const node = (x, y, r, label, fill, stroke) => { el("circle", { cx: x, cy: y, r, fill: fill || "var(--card)", stroke: stroke || INK, "stroke-width": 2 }); txt(x, y + 6, label, { "text-anchor": "middle", style: "font-size:16px;font-weight:700;fill:var(--ink)" }); };
+      const S = [290, 150], IN = [[95, 60], [95, 150], [95, 240]];
+      el("rect", { x: 250, y: 86, width: 210, height: 128, rx: 14, fill: "none", stroke: ACC, "stroke-width": 2.5, "stroke-dasharray": "7 5" });
+      txt(355, 80, NT.neuron + " " + n.name, { "text-anchor": "middle", style: "font-size:14px;font-weight:700;fill:var(--accent)" });
+      const all = n.ins.concat([["1", 1, n.b, true]]);
+      all.forEach(([nm, v, w, isB], i) => {
+        const [px, py] = IN[i], col = isB ? FWD : (w < 0 ? BWD : ACC);
+        el("line", { x1: px + 22, y1: py, x2: S[0] - 26, y2: S[1] + (i - 1) * 12, stroke: col, "stroke-width": 3 });
+        const t = txt(px + 22 + (S[0] - 26 - px - 22) * 0.45, py + (S[1] + (i - 1) * 12 - py) * 0.45 - 8, (isB ? "b = " : "w = ") + f2(w, 1), { "text-anchor": "middle", style: `font-size:14px;font-weight:700;fill:${col}` });
+        t.setAttribute("paint-order", "stroke"); t.setAttribute("stroke", "var(--bg)"); t.setAttribute("stroke-width", "5");
+        node(px, py, 22, nm, isB ? "var(--fwd-soft)" : null, isB ? FWD : null);
+        if (!isB) txt(px - 30, py + 6, "= " + fv(v), { "text-anchor": "end", style: "font-size:15px;font-weight:700;fill:var(--accent)" });
+        else txt(px, py + 38, NT.always1, { "text-anchor": "middle", style: "font-size:11px;fill:var(--fwd);font-weight:600" });
+      });
+      node(S[0], S[1], 26, "Σ", "var(--accent-soft)");
+      el("line", { x1: S[0] + 26, y1: S[1], x2: 378, y2: S[1], stroke: INK, "stroke-width": 2 });
+      txt(347, S[1] - 10, f2(n.s), { "text-anchor": "middle", style: "font-size:14px;font-weight:700;fill:var(--ink)" });
+      el("rect", { x: 378, y: 122, width: 64, height: 56, rx: 8, fill: "var(--card)", stroke: INK, "stroke-width": 2 });
+      let d = "";
+      for (let x = -6; x <= 6.001; x += 0.5) d += (d ? "L" : "M") + (384 + (x + 6) / 12 * 52).toFixed(1) + " " + (172 - sig(x) * 44).toFixed(1);
+      el("path", { d, fill: "none", stroke: ACC, "stroke-width": 2.5 });
+      txt(410, 196, NT.sigm, { "text-anchor": "middle", style: "font-size:11px" });
+      el("line", { x1: 442, y1: S[1], x2: 476, y2: S[1], stroke: INK, "stroke-width": 2 });
+      el("polygon", { points: `476,${S[1] - 8} 490,${S[1]} 476,${S[1] + 8}`, fill: INK });
+      txt(496, S[1] + 8, n.name + " = " + f2(n.out), { style: "font-size:20px;font-weight:700;fill:var(--fwd)" });
+      txt(300, 286, `${n.name} = σ(${f2(n.s)}) = ${f2(n.out)}`, { "text-anchor": "middle", style: "font-size:18px;fill:var(--ink)" });
+      const sum = n.ins.map(([nm, v, w]) => `${fv(v)} · ${fw(w)}`).join(" + ") + ` + 1 · ${fw(n.b)} = <b>${f2(n.s)}</b>`;
+      const gyExpr = n.from ? `${fs(n.from[0])} · ${fw(n.from[1])} = <b>${fs(n.gy)}</b>` : `${f2(n.out)} − 1 = <b>${fs(n.gy)}</b>`;
+      const rows = [
+        ["fwd", NT.r1, sum],
+        ["fwd", NT.r2, `σ(${f2(n.s)}) = 1 / (1 + e<sup>−${f2(n.s)}</sup>) = <b>${f2(n.out)}</b>`],
+        ["bwd", n.from ? NT.r3h : NT.r3o, gyExpr],
+        ["bwd", NT.r4, `${fs(n.gy)} · ${f2(n.out)} · ${f2(1 - n.out)} = <b>${fs(n.gx)}</b>`]
+      ];
+      document.getElementById("nm-tbl").innerHTML = `<table class='tbl' style='font-size:15px;margin:4px 0'>${rows.map(([c, a, b]) => `<tr><td><span class='${c}'>${a}</span></td><td>${b}</td></tr>`).join("")}</table>`;
+      document.getElementById("nm-text").innerHTML = T.text;
+      m.hidden = false; window.__nmOpen = true;
+      document.getElementById("nm-x").focus();
+    }
     stepper("num", [
       { name: "A rede", dur: 6000,
         text: "Uma rede mínima com <b>3 camadas</b>:<br>• <b>entradas</b> x₁, x₂: não são neurônios, só entregam os dados.<br>• <b>camada oculta</b>: 2 neurônios, h₁ e h₂.<br>• <b>saída</b>: 1 neurônio, y.<br>Cada neurônio (com anel) soma e aplica a sigmoide. Os números nas linhas são os <b>pesos</b>, inventados.<br>Entrada <b>(1, 0)</b>; para o XOR, a resposta certa é <b>d = 1</b>.<div style='background:var(--accent-soft);border-radius:8px;padding:6px 10px;margin:8px 0 0;font-size:15px'>⚠️ Nos passos seguintes, em <b>∂E/∂x</b> o <b>x</b> é a <b>soma</b> que chega a um neurônio (notação do artigo), não as entradas x₁, x₂.</div>",
