@@ -178,12 +178,12 @@
 
 <!-- 4 · Perceptrón y XOR -->
 <section class="slide">
-  <header class="sh"><span class="kick">1 · O momento histórico</span><h2><span class="snum">1</span>O perceptron e o problema do XOR</h2></header>
+  <header class="sh"><span class="kick">1 · O momento histórico · revisão da apresentação anterior</span><h2><span class="snum">1</span>Relembrando: o perceptron e o XOR</h2></header>
   <div class="anim">
     <div class="a-left"><div class="ecchips" id="xorp-chips"></div><svg id="xorp-svg" viewBox="0 0 600 340" role="img" aria-label="Perceptron, AND, OR e XOR"></svg></div>
     <div class="a-right"><div class="ectext" id="xorp-text" aria-live="polite"></div>
       <div class="ecctrl"><button type="button" id="xorp-prev">◀</button><button type="button" id="xorp-play">▶ Reproduzir tudo</button><button type="button" id="xorp-next">▶</button></div>
-      <p class="cap">O XOR é o exemplo clássico. O artigo usa outro problema do mesmo tipo: detectar simetria (mais adiante).</p></div>
+      <p class="cap">Revisão rápida: o grupo anterior viu isso em detalhe. O XOR é o exemplo clássico. O artigo usa outro problema do mesmo tipo: detectar simetria (mais adiante).</p></div>
   </div>
 </section>
 
@@ -592,7 +592,7 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
     }
     stepper("xorp", [
       { name: "Perceptron", dur: 6500,
-        text: "Um perceptron recebe entradas <b>x₁, x₂</b>, multiplica cada uma por um <b>peso</b>, soma, e responde <b>1</b> se a soma passar de zero (função degrau). Aprender = ajustar os pesos até as respostas ficarem certas.",
+        text: "Um perceptron recebe entradas <b>x₁, x₂</b>, multiplica cada uma por um <b>peso</b>, soma um <b>viés b</b>, e a saída <b>y</b> é <b>1</b> se a soma passar de zero, senão 0 (função degrau). Aprender = ajustar os pesos até as respostas ficarem certas.",
         draw({ el, txt, fade }) {
           const node = (x, y, r, label, fill) => { el("circle", { cx: x, cy: y, r, fill: fill || "var(--card)", stroke: INK, "stroke-width": 2 }); txt(x, y + 6, label, { "text-anchor": "middle", style: "font-size:18px;font-weight:700;fill:var(--ink)" }); };
           el("line", { x1: 120, y1: 110, x2: 300, y2: 170, stroke: ACC, "stroke-width": 3 });
@@ -605,23 +605,65 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
           el("rect", { x: 400, y: 140, width: 70, height: 60, rx: 8, fill: "var(--card)", stroke: INK, "stroke-width": 2 });
           el("path", { d: "M410 188 H435 V152 H460", fill: "none", stroke: BWD, "stroke-width": 3 });
           txt(435, 218, "degrau", { "text-anchor": "middle", style: "font-size:12px" });
-          txt(545, 176, "0/1", { "text-anchor": "middle", style: "font-size:18px;font-weight:700;fill:var(--ink)" });
-          fade(txt(300, 300, "y = 1  se  w₁x₁ + w₂x₂ + b > 0", { "text-anchor": "middle", style: "font-size:20px;fill:var(--ink)" }), 500);
+          el("line", { x1: 318, y1: 92, x2: 318, y2: 140, stroke: ACC, "stroke-width": 3 });
+          node(318, 74, 18, "b");
+          txt(345, 70, "viés", { style: "font-size:12px" });
+          node(545, 170, 24, "y", "var(--fwd-soft)");
+          txt(545, 214, "saída: 0 ou 1", { "text-anchor": "middle", style: "font-size:12px" });
+          fade(el("ellipse", { cx: 382, cy: 172, rx: 118, ry: 64, fill: "none", stroke: ACC, "stroke-width": 2.5, "stroke-dasharray": "7 5" }), 900);
+          fade(txt(382, 258, "um único neurônio", { "text-anchor": "middle", style: "font-size:16px;font-weight:700;fill:var(--accent)" }), 900);
+          fade(txt(382, 276, "(sem camada oculta: entradas → saída)", { "text-anchor": "middle", style: "font-size:12px" }), 900);
+          fade(txt(300, 322, "y = 1  se  w₁x₁ + w₂x₂ + b > 0", { "text-anchor": "middle", style: "font-size:20px;fill:var(--ink)" }), 500);
         } },
-      { name: "AND", dur: 5000,
-        text: "Desenhando as 4 entradas possíveis num plano, a regra do perceptron é uma <b>reta</b>: de um lado responde 1, do outro 0. Para o <b>AND</b> (1 só se as duas forem 1) existe uma reta que separa. ✓",
+      { name: "AND", dur: 9000,
+        text: "Desenhando as 4 entradas possíveis num plano, a regra do perceptron é uma <b>reta</b>: de um lado responde 1, do outro 0. Para o <b>AND</b> (1 só se as duas forem 1) existe uma reta que separa. ✓<br>Exemplo: <b>w₁ = 1, w₂ = 1, b = −1,5</b><table class='tbl' style='font-size:15px;margin:8px 0 6px'><tr><th>(x₁,x₂)</th><th>soma</th><th>=</th><th>y</th></tr><tr><td>(0,0)</td><td>0 + 0 − 1,5</td><td>−1,5</td><td><b>0</b></td></tr><tr><td>(1,0)</td><td>1 + 0 − 1,5</td><td>−0,5</td><td><b>0</b></td></tr><tr><td>(0,1)</td><td>0 + 1 − 1,5</td><td>−0,5</td><td><b>0</b></td></tr><tr class='hl'><td>(1,1)</td><td>1 + 1 − 1,5</td><td>+0,5</td><td><b>1</b></td></tr></table>A reta azul é onde a soma vale 0: <b>x₁ + x₂ = 1,5</b>.",
         draw(h) { plane(h, [0, 0, 0, 1], [[0.3, 1.2, 1.2, 0.3]], ["AND ✓", "uma reta separa"], "var(--fwd)"); } },
-      { name: "OR", dur: 5000,
-        text: "Para o <b>OR</b> (1 se qualquer uma for 1) também existe uma reta. ✓ O perceptron aprende os dois.",
+      { name: "OR", dur: 9000,
+        text: "Para o <b>OR</b> (1 se qualquer uma for 1) também existe uma reta. ✓ O perceptron aprende os dois.<br>Exemplo: <b>w₁ = 1, w₂ = 1, b = −0,5</b><table class='tbl' style='font-size:15px;margin:8px 0 6px'><tr><th>(x₁,x₂)</th><th>soma</th><th>=</th><th>y</th></tr><tr><td>(0,0)</td><td>0 + 0 − 0,5</td><td>−0,5</td><td><b>0</b></td></tr><tr class='hl'><td>(1,0)</td><td>1 + 0 − 0,5</td><td>+0,5</td><td><b>1</b></td></tr><tr class='hl'><td>(0,1)</td><td>0 + 1 − 0,5</td><td>+0,5</td><td><b>1</b></td></tr><tr class='hl'><td>(1,1)</td><td>1 + 1 − 0,5</td><td>+1,5</td><td><b>1</b></td></tr></table>Só mudou b: a reta desce para <b>x₁ + x₂ = 0,5</b>.",
         draw(h) { plane(h, [0, 1, 1, 1], [[-0.2, 0.7, 0.7, -0.2]], ["OR ✓", "uma reta separa"], "var(--fwd)"); } },
-      { name: "XOR", dur: 7000,
-        text: "No <b>XOR</b> (1 se forem <i>diferentes</i>) os 1 ficam em cantos opostos. <b>Nenhuma reta</b> deixa os dois 1 de um lado e os dois 0 do outro. Um perceptron de uma camada <b>nunca</b> aprende o XOR, não importa quanto treine.",
-        draw(h) { plane(h, [0, 1, 1, 0], [[-0.2, 0.7, 0.7, -0.2, BWD, "6 4"], [0.3, 1.2, 1.2, 0.3, BWD, "6 4"], [0.5, -0.2, 0.5, 1.2, BWD, "6 4"], [-0.2, 0.2, 1.2, 0.9, BWD, "6 4"]], ["XOR ✗", "nenhuma reta separa"], "var(--bwd)"); } },
+      { name: "XOR", dur: 13000,
+        text: "No <b>XOR</b> (1 se forem <i>diferentes</i>) os 1 ficam em cantos opostos. Cada reta é uma <b>tentativa</b>:<table class='tbl' style='font-size:14px;margin:6px 0 4px'><tr><td style='padding:4px 8px'>① x₁+x₂ = 0,5 (a do OR)</td><td style='padding:4px 8px'>o 0 de (1,1) fica com os 1</td></tr><tr><td style='padding:4px 8px'>② x₁+x₂ = 1,5 (a do AND)</td><td style='padding:4px 8px'>o 0 de (0,0) fica com os 1</td></tr><tr><td style='padding:4px 8px'>③ vertical · ④ inclinada</td><td style='padding:4px 8px'>cada lado tem um 0 e um 1</td></tr></table><b>Prova:</b> (1,0) e (0,1) exigem w₁+b > 0 e w₂+b > 0; (0,0) exige b ≤ 0. Somando: w₁+w₂+b > −b ≥ 0. Mas (1,1) exige ≤ 0. <b>Impossível</b>: o perceptron de uma camada nunca aprende o XOR.",
+        draw(h) {
+          plane(h, [0, 1, 1, 0], [[-0.2, 0.7, 0.7, -0.2, BWD, "6 4"], [0.3, 1.2, 1.2, 0.3, BWD, "6 4"], [0.5, -0.2, 0.5, 1.2, BWD, "6 4"], [-0.2, 0.2, 1.2, 0.9, BWD, "6 4"]], ["XOR ✗", "nenhuma reta separa"], "var(--bwd)");
+          [[-0.28, 0.7, "①"], [1.27, 0.3, "②"], [0.5, 1.28, "③"], [1.27, 0.9, "④"]].forEach(([a, b, n], k) =>
+            h.fade(h.txt(P(a, b)[0], P(a, b)[1] + 6, n, { "text-anchor": "middle", style: "font-size:18px;font-weight:700;fill:var(--bwd)" }), 300 + k * 500));
+        } },
       { name: "Com camada oculta", dur: 8000,
-        text: "Com <b>duas</b> unidades no meio dá certo: uma faz OR, outra faz AND, e a saída responde “OR e não AND”. A faixa entre as duas retas é o XOR. ✓ <br><br>Mas aqui <b>nós</b> escolhemos esses pesos. O problema de 1969 era: <b>como a rede descobre isso sozinha?</b>",
+        text: "Com <b>duas</b> unidades no meio dá certo: uma faz OR (reta de baixo), outra faz AND (reta de cima), e a saída responde “OR e não AND”. A faixa verde entre as duas retas é o XOR. ✓",
         draw(h) {
           plane(h, [0, 1, 1, 0], [[-0.2, 0.7, 0.7, -0.2, FWD], [0.3, 1.2, 1.2, 0.3, FWD]], ["XOR ✓", "duas retas = duas", "unidades ocultas", "(pesos escolhidos à mão)"], "var(--fwd)",
             () => h.el("polygon", { points: [P(-0.2, 0.7), P(0.7, -0.2), P(1.2, -0.2), P(1.2, 0.3), P(0.3, 1.2), P(-0.2, 1.2)].map(p => p.join(",")).join(" "), fill: "var(--fwd-soft)" }));
+        } },
+      { name: "A rede", dur: 12000,
+        text: "A rede completa. Cada unidade é um perceptron: soma, e dá <b>1</b> se passar de zero.<table class='tbl' style='font-size:14px;margin:6px 0 4px'><tr><th style='padding:4px 8px;text-transform:none'>(x₁,x₂)</th><th style='padding:4px 8px;text-transform:none'>h₁ OR</th><th style='padding:4px 8px;text-transform:none'>h₂ AND</th><th style='padding:4px 8px;text-transform:none'>h₁ − h₂ − 0,5</th><th style='padding:4px 8px;text-transform:none'>y</th></tr><tr><td style='padding:4px 8px'>(0,0)</td><td style='padding:4px 8px'>0</td><td style='padding:4px 8px'>0</td><td style='padding:4px 8px'>−0,5</td><td style='padding:4px 8px'><b>0</b></td></tr><tr class='hl'><td style='padding:4px 8px'>(1,0)</td><td style='padding:4px 8px'>1</td><td style='padding:4px 8px'>0</td><td style='padding:4px 8px'>+0,5</td><td style='padding:4px 8px'><b>1</b></td></tr><tr class='hl'><td style='padding:4px 8px'>(0,1)</td><td style='padding:4px 8px'>1</td><td style='padding:4px 8px'>0</td><td style='padding:4px 8px'>+0,5</td><td style='padding:4px 8px'><b>1</b></td></tr><tr><td style='padding:4px 8px'>(1,1)</td><td style='padding:4px 8px'>1</td><td style='padding:4px 8px'>1</td><td style='padding:4px 8px'>−0,5</td><td style='padding:4px 8px'><b>0</b></td></tr></table>Mas aqui <b>nós</b> escolhemos esses pesos. O problema de 1969 era: <b>como a rede descobre isso sozinha?</b>",
+        draw({ el, txt, fade }) {
+          const N = { x1: [80, 95], x2: [80, 245], h1: [300, 95], h2: [300, 245], y: [510, 170] };
+          const edge = (a, b, w, f, dx, dy, col, delay) => {
+            const [ax, ay] = N[a], [bx, by] = N[b];
+            fade(el("line", { x1: ax, y1: ay, x2: bx, y2: by, stroke: col, "stroke-width": 3 }), delay);
+            fade(txt(ax + (bx - ax) * f + dx, ay + (by - ay) * f + dy, w, { "text-anchor": "middle", style: `font-size:16px;font-weight:700;fill:${col}` }), delay);
+          };
+          edge("x1", "h1", "1", 0.5, 0, -10, ACC, 200);
+          edge("x2", "h2", "1", 0.5, 0, 22, ACC, 200);
+          edge("x1", "h2", "1", 0.25, 6, 22, ACC, 200);
+          edge("x2", "h1", "1", 0.25, 6, -10, ACC, 200);
+          edge("h1", "y", "+1", 0.45, 0, -12, FWD, 900);
+          edge("h2", "y", "−1", 0.45, 0, 26, BWD, 900);
+          const node = (k, r, label, fill, delay) => {
+            const [x, y] = N[k];
+            const g = [el("circle", { cx: x, cy: y, r, fill: fill || "var(--card)", stroke: INK, "stroke-width": 2 }),
+              txt(x, y + 6, label, { "text-anchor": "middle", style: "font-size:18px;font-weight:700;fill:var(--ink)" })];
+            g.forEach(n => fade(n, delay));
+          };
+          node("x1", 22, "x₁", null, 0); node("x2", 22, "x₂", null, 0);
+          node("h1", 28, "h₁", "var(--accent-soft)", 200); node("h2", 28, "h₂", "var(--accent-soft)", 200);
+          node("y", 28, "y", "var(--fwd-soft)", 900);
+          fade(txt(300, 50, "OR · b = −0,5", { "text-anchor": "middle", style: "font-size:14px;font-weight:600;fill:var(--accent)" }), 400);
+          fade(txt(300, 300, "AND · b = −1,5", { "text-anchor": "middle", style: "font-size:14px;font-weight:600;fill:var(--accent)" }), 400);
+          fade(txt(510, 125, "XOR · b = −0,5", { "text-anchor": "middle", style: "font-size:14px;font-weight:600;fill:var(--fwd)" }), 1100);
+          fade(txt(80, 300, "entradas", { "text-anchor": "middle", style: "font-size:12px" }), 0);
+          fade(txt(300, 325, "camada oculta", { "text-anchor": "middle", style: "font-size:12px" }), 400);
+          fade(txt(510, 220, "saída", { "text-anchor": "middle", style: "font-size:12px" }), 1100);
         } }
     ]);
   })();
