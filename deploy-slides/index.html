@@ -138,6 +138,17 @@
   .hud:hover { opacity: 1; }
   .hud button { font: inherit; background: #2a2c31; color: #e6e7ea; border: 1px solid #3a3d44; border-radius: 6px; padding: 3px 9px; cursor: pointer; }
   .progress { position: fixed; top: 0; left: 0; height: 3px; background: #6c8cff; z-index: 10; transition: width .2s; }
+
+  /* ===== Modal: una neurona por dentro ===== */
+  .nmodal { position: fixed; inset: 0; background: rgba(20, 20, 25, .55); display: flex; align-items: center; justify-content: center; z-index: 50; }
+  .nmodal[hidden] { display: none; }
+  .nm-card { background: var(--bg); color: var(--ink); border-radius: 12px; padding: 22px 30px 18px; width: min(900px, 94vw); max-height: 94vh; overflow: auto; position: relative; box-shadow: 0 20px 60px rgba(0, 0, 0, .35); }
+  .nm-card h3 { margin: 0 0 2px; font-size: 26px; }
+  .nm-sub { color: var(--muted); font-size: 16px; margin: 0 0 4px; }
+  .nm-x { position: absolute; top: 10px; right: 14px; border: none; background: none; font-size: 24px; cursor: pointer; color: var(--muted); }
+  .nm-card svg { width: 100%; height: auto; max-height: 44vh; display: block; }
+  .nm-card .tbl td, .nm-card .tbl th { padding: 4px 10px; text-transform: none; }
+  .nm-text { font-size: 17px; margin: 6px 0 0; }
 </style>
 </head>
 <body>
@@ -590,6 +601,74 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
       });
       verdict.forEach((v, k) => fade(txt(475, 120 + k * 26, v, { "text-anchor": "middle", style: `font-size:${k ? 15 : 20}px;font-weight:${k ? 400 : 700};fill:${k ? "var(--muted)" : vColor}` }), 900 + k * 150));
     }
+
+    // ----- Modal: una neurona por dentro (pestaña "La red") -----
+    const NM = {
+      si: "se", step: "degrau", out01: "0 ou 1", hint1: "clique num neurônio", hint2: "para vê-lo por dentro",
+      hdr: ["(x₁,x₂)", "entradas do neurônio", "soma", "saída"],
+      y:  { title: "O neurônio de saída <b>y</b> por dentro", neuron: "um neurônio (o de saída)",
+            sub: "É o mesmo perceptron da aba 1. Só mudam as entradas (h₁ e h₂ em vez de x₁ e x₂) e os pesos.",
+            text: "Responde <b>1</b> só quando h₁ = 1 e h₂ = 0, ou seja “OR e não AND”: isso é o <b>XOR</b>." },
+      h1: { title: "O neurônio oculto <b>h₁</b> por dentro", neuron: "um neurônio (oculto)",
+            sub: "O mesmo perceptron da aba 1, com w₁ = w₂ = 1 e b = −0,5.",
+            text: "Responde <b>1</b> se pelo menos uma entrada for 1: faz o <b>OR</b>." },
+      h2: { title: "O neurônio oculto <b>h₂</b> por dentro", neuron: "um neurônio (oculto)",
+            sub: "O mesmo perceptron da aba 1, com w₁ = w₂ = 1 e b = −1,5.",
+            text: "Só passa de zero se as duas entradas forem 1: faz o <b>AND</b>." }
+    };
+    const NEUR = {
+      h1: { name: "h₁", ins: ["x₁", "x₂"], w: [1, 1], b: -0.5, f: (a, c) => [a, c] },
+      h2: { name: "h₂", ins: ["x₁", "x₂"], w: [1, 1], b: -1.5, f: (a, c) => [a, c] },
+      y:  { name: "y",  ins: ["h₁", "h₂"], w: [1, -1], b: -0.5, f: (a, c) => [+(a + c - 0.5 > 0), +(a + c - 1.5 > 0)] }
+    };
+    const nf = v => (v > 0 ? "+" : v < 0 ? "−" : "") + String(Math.abs(v)).replace(".", ",");
+    const term = (w, s, first) => (w < 0 ? (first ? "−" : " − ") : (first ? "" : " + ")) + s;
+    window.closeNeuronGlobal = () => closeNeuron();
+    function closeNeuron() { document.getElementById("nmodal").hidden = true; window.__nmOpen = false; }
+    function openNeuron(k) {
+      const m = document.getElementById("nmodal"), svg = document.getElementById("nm-svg"), n = NEUR[k], T = NM[k];
+      if (!m.dataset.bound) {
+        m.dataset.bound = 1;
+        m.addEventListener("click", e => { if (e.target === m) closeNeuron(); });
+        document.getElementById("nm-x").addEventListener("click", closeNeuron);
+      }
+      document.getElementById("nm-title").innerHTML = T.title;
+      document.getElementById("nm-sub").innerHTML = T.sub;
+      document.getElementById("nm-text").innerHTML = T.text;
+      svg.innerHTML = "";
+      const { el, txt } = helpers(svg, []);
+      const wc = w => (w < 0 ? BWD : k === "y" ? FWD : ACC);
+      const node = (x, y, r, label, fill) => { el("circle", { cx: x, cy: y, r, fill: fill || "var(--card)", stroke: INK, "stroke-width": 2 }); txt(x, y + 6, label, { "text-anchor": "middle", style: "font-size:18px;font-weight:700;fill:var(--ink)" }); };
+      el("ellipse", { cx: 382, cy: 150, rx: 118, ry: 64, fill: "none", stroke: ACC, "stroke-width": 2.5, "stroke-dasharray": "7 5" });
+      el("line", { x1: 120, y1: 90, x2: 300, y2: 150, stroke: wc(n.w[0]), "stroke-width": 3 });
+      el("line", { x1: 120, y1: 210, x2: 300, y2: 150, stroke: wc(n.w[1]), "stroke-width": 3 });
+      txt(200, 104, (k === "y" ? nf(n.w[0]) : n.w[0]), { "text-anchor": "middle", style: `font-size:18px;font-weight:700;fill:${wc(n.w[0])}` });
+      txt(200, 214, (k === "y" ? nf(n.w[1]) : n.w[1]), { "text-anchor": "middle", style: `font-size:18px;font-weight:700;fill:${wc(n.w[1])}` });
+      el("line", { x1: 318, y1: 72, x2: 318, y2: 120, stroke: ACC, "stroke-width": 3 });
+      el("line", { x1: 336, y1: 150, x2: 400, y2: 150, stroke: INK, "stroke-width": 2 });
+      el("line", { x1: 470, y1: 150, x2: 520, y2: 150, stroke: INK, "stroke-width": 2 });
+      el("polygon", { points: "520,142 536,150 520,158", fill: INK });
+      node(100, 90, 22, n.ins[0], k === "y" ? "var(--accent-soft)" : null);
+      node(100, 210, 22, n.ins[1], k === "y" ? "var(--accent-soft)" : null);
+      node(318, 150, 30, "Σ", "var(--accent-soft)");
+      node(318, 54, 18, "b");
+      txt(344, 50, "b = " + nf(n.b), { style: "font-size:15px;font-weight:700;fill:var(--accent)" });
+      el("rect", { x: 400, y: 120, width: 70, height: 60, rx: 8, fill: "var(--card)", stroke: INK, "stroke-width": 2 });
+      el("path", { d: "M410 168 H435 V132 H460", fill: "none", stroke: BWD, "stroke-width": 3 });
+      txt(435, 198, NM.step, { "text-anchor": "middle", style: "font-size:12px" });
+      txt(560, 159, n.name, { "text-anchor": "middle", style: "font-size:24px;font-weight:700;fill:var(--fwd)" });
+      txt(560, 182, NM.out01, { "text-anchor": "middle", style: "font-size:12px" });
+      txt(382, 238, T.neuron, { "text-anchor": "middle", style: "font-size:16px;font-weight:700;fill:var(--accent)" });
+      txt(300, 284, `${n.name} = 1  ${NM.si}  ${term(n.w[0], n.ins[0], true)}${term(n.w[1], n.ins[1], false)} − ${String(-n.b).replace(".", ",")} > 0`, { "text-anchor": "middle", style: "font-size:20px;fill:var(--ink)" });
+      let rows = `<tr>${NM.hdr.map(s => `<th>${s}</th>`).join("")}</tr>`;
+      [[0, 0], [1, 0], [0, 1], [1, 1]].forEach(([a, c]) => {
+        const [i0, i1] = n.f(a, c), s = n.w[0] * i0 + n.w[1] * i1 + n.b, out = +(s > 0);
+        rows += `<tr${out ? " class='hl'" : ""}><td>(${a},${c})</td><td>${n.ins[0]} = ${i0}, ${n.ins[1]} = ${i1}</td><td>${i0}${n.w[1] < 0 ? " − " : " + "}${i1} − ${String(-n.b).replace(".", ",")} = ${nf(s)}</td><td><b>${out}</b></td></tr>`;
+      });
+      document.getElementById("nm-tbl").innerHTML = `<table class='tbl' style='font-size:15px;margin:4px 0'>${rows}</table>`;
+      m.hidden = false; window.__nmOpen = true;
+      document.getElementById("nm-x").focus();
+    }
     stepper("xorp", [
       { name: "Perceptron", dur: 6500,
         text: "Um perceptron recebe entradas <b>x₁, x₂</b>, multiplica cada uma por um <b>peso</b>, soma um <b>viés b</b>, e a saída <b>y</b> é <b>1</b> se a soma passar de zero, senão 0 (função degrau). Aprender = ajustar os pesos até as respostas ficarem certas.",
@@ -608,8 +687,10 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
           el("line", { x1: 318, y1: 92, x2: 318, y2: 140, stroke: ACC, "stroke-width": 3 });
           node(318, 74, 18, "b");
           txt(345, 70, "viés", { style: "font-size:12px" });
-          node(545, 170, 24, "y", "var(--fwd-soft)");
-          txt(545, 214, "saída: 0 ou 1", { "text-anchor": "middle", style: "font-size:12px" });
+          el("polygon", { points: "520,162 536,170 520,178", fill: INK });
+          txt(556, 179, "y", { "text-anchor": "middle", style: "font-size:24px;font-weight:700;fill:var(--fwd)" });
+          txt(556, 146, "saída", { "text-anchor": "middle", style: "font-size:12px" });
+          txt(556, 202, "0 ou 1", { "text-anchor": "middle", style: "font-size:12px" });
           fade(el("ellipse", { cx: 382, cy: 172, rx: 118, ry: 64, fill: "none", stroke: ACC, "stroke-width": 2.5, "stroke-dasharray": "7 5" }), 900);
           fade(txt(382, 258, "um único neurônio", { "text-anchor": "middle", style: "font-size:16px;font-weight:700;fill:var(--accent)" }), 900);
           fade(txt(382, 276, "(sem camada oculta: entradas → saída)", { "text-anchor": "middle", style: "font-size:12px" }), 900);
@@ -635,7 +716,7 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
             () => h.el("polygon", { points: [P(-0.2, 0.7), P(0.7, -0.2), P(1.2, -0.2), P(1.2, 0.3), P(0.3, 1.2), P(-0.2, 1.2)].map(p => p.join(",")).join(" "), fill: "var(--fwd-soft)" }));
         } },
       { name: "A rede", dur: 12000,
-        text: "A rede completa. Cada unidade é um perceptron: soma, e dá <b>1</b> se passar de zero.<table class='tbl' style='font-size:14px;margin:6px 0 4px'><tr><th style='padding:4px 8px;text-transform:none'>(x₁,x₂)</th><th style='padding:4px 8px;text-transform:none'>h₁ OR</th><th style='padding:4px 8px;text-transform:none'>h₂ AND</th><th style='padding:4px 8px;text-transform:none'>h₁ − h₂ − 0,5</th><th style='padding:4px 8px;text-transform:none'>y</th></tr><tr><td style='padding:4px 8px'>(0,0)</td><td style='padding:4px 8px'>0</td><td style='padding:4px 8px'>0</td><td style='padding:4px 8px'>−0,5</td><td style='padding:4px 8px'><b>0</b></td></tr><tr class='hl'><td style='padding:4px 8px'>(1,0)</td><td style='padding:4px 8px'>1</td><td style='padding:4px 8px'>0</td><td style='padding:4px 8px'>+0,5</td><td style='padding:4px 8px'><b>1</b></td></tr><tr class='hl'><td style='padding:4px 8px'>(0,1)</td><td style='padding:4px 8px'>1</td><td style='padding:4px 8px'>0</td><td style='padding:4px 8px'>+0,5</td><td style='padding:4px 8px'><b>1</b></td></tr><tr><td style='padding:4px 8px'>(1,1)</td><td style='padding:4px 8px'>1</td><td style='padding:4px 8px'>1</td><td style='padding:4px 8px'>−0,5</td><td style='padding:4px 8px'><b>0</b></td></tr></table>Mas aqui <b>nós</b> escolhemos esses pesos. O problema de 1969 era: <b>como a rede descobre isso sozinha?</b>",
+        text: "A rede tem <b>3 neurônios</b>: <b>h₁</b> e <b>h₂</b> (camada oculta) e <b>y</b> (saída). x₁, x₂ só entregam os dados. Cada anel é o oval da aba 1 (Σ + degrau) desenhado em pequeno, e leva o nome do que produz.<table class='tbl' style='font-size:14px;margin:6px 0 4px'><tr><th style='padding:4px 8px;text-transform:none'>(x₁,x₂)</th><th style='padding:4px 8px;text-transform:none'>h₁ OR</th><th style='padding:4px 8px;text-transform:none'>h₂ AND</th><th style='padding:4px 8px;text-transform:none'>h₁ − h₂ − 0,5</th><th style='padding:4px 8px;text-transform:none'>y</th></tr><tr><td style='padding:4px 8px'>(0,0)</td><td style='padding:4px 8px'>0</td><td style='padding:4px 8px'>0</td><td style='padding:4px 8px'>−0,5</td><td style='padding:4px 8px'><b>0</b></td></tr><tr class='hl'><td style='padding:4px 8px'>(1,0)</td><td style='padding:4px 8px'>1</td><td style='padding:4px 8px'>0</td><td style='padding:4px 8px'>+0,5</td><td style='padding:4px 8px'><b>1</b></td></tr><tr class='hl'><td style='padding:4px 8px'>(0,1)</td><td style='padding:4px 8px'>1</td><td style='padding:4px 8px'>0</td><td style='padding:4px 8px'>+0,5</td><td style='padding:4px 8px'><b>1</b></td></tr><tr><td style='padding:4px 8px'>(1,1)</td><td style='padding:4px 8px'>1</td><td style='padding:4px 8px'>1</td><td style='padding:4px 8px'>−0,5</td><td style='padding:4px 8px'><b>0</b></td></tr></table>Mas aqui <b>nós</b> escolhemos esses pesos. O problema de 1969 era: <b>como a rede descobre isso sozinha?</b>",
         draw({ el, txt, fade }) {
           const N = { x1: [80, 95], x2: [80, 245], h1: [300, 95], h2: [300, 245], y: [510, 170] };
           const edge = (a, b, w, f, dx, dy, col, delay) => {
@@ -654,6 +735,7 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
             const g = [el("circle", { cx: x, cy: y, r, fill: fill || "var(--card)", stroke: INK, "stroke-width": 2 }),
               txt(x, y + 6, label, { "text-anchor": "middle", style: "font-size:18px;font-weight:700;fill:var(--ink)" })];
             g.forEach(n => fade(n, delay));
+            if (k[0] !== "x") g.forEach(n => { n.style.cursor = "pointer"; n.addEventListener("click", () => openNeuron(k)); });
           };
           node("x1", 22, "x₁", null, 0); node("x2", 22, "x₂", null, 0);
           node("h1", 28, "h₁", "var(--accent-soft)", 200); node("h2", 28, "h₂", "var(--accent-soft)", 200);
@@ -662,8 +744,12 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
           fade(txt(300, 300, "AND · b = −1,5", { "text-anchor": "middle", style: "font-size:14px;font-weight:600;fill:var(--accent)" }), 400);
           fade(txt(510, 125, "XOR · b = −0,5", { "text-anchor": "middle", style: "font-size:14px;font-weight:600;fill:var(--fwd)" }), 1100);
           fade(txt(80, 300, "entradas", { "text-anchor": "middle", style: "font-size:12px" }), 0);
-          fade(txt(300, 325, "camada oculta", { "text-anchor": "middle", style: "font-size:12px" }), 400);
-          fade(txt(510, 220, "saída", { "text-anchor": "middle", style: "font-size:12px" }), 1100);
+          fade(txt(80, 316, "(não são neurônios)", { "text-anchor": "middle", style: "font-size:12px" }), 0);
+          fade(txt(590, 292, "👆 " + NM.hint1, { "text-anchor": "end", style: "font-size:13px;font-weight:600;fill:var(--accent)" }), 1400);
+          fade(txt(590, 308, NM.hint2, { "text-anchor": "end", style: "font-size:13px;font-weight:600;fill:var(--accent)" }), 1400);
+          [["h1", 200], ["h2", 200], ["y", 900]].forEach(([n, t]) => fade(el("circle", { cx: N[n][0], cy: N[n][1], r: 37, fill: "none", stroke: ACC, "stroke-width": 2, "stroke-dasharray": "6 4" }), t + 600));
+          fade(txt(300, 325, "camada oculta: 2 neurônios", { "text-anchor": "middle", style: "font-size:12px" }), 400);
+          fade(txt(510, 222, "saída: 1 neurônio", { "text-anchor": "middle", style: "font-size:12px" }), 1100);
         } }
     ]);
   })();
@@ -1064,6 +1150,7 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
     document.addEventListener("keydown", e => {
       if (e.target.closest && e.target.closest("input, textarea")) return;
       const k = e.key;
+      if (window.__nmOpen) { if (k === "Escape") closeNeuronGlobal(); e.preventDefault(); return; }
       if (k === "ArrowRight" || k === " " || k === "Enter") { e.preventDefault(); next(); }
       else if (k === "ArrowLeft" || k === "Backspace") { e.preventDefault(); prev(); }
       else if (k === "PageDown" || k === "ArrowDown") { e.preventDefault(); show(idx + 1); }
@@ -1083,5 +1170,11 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
     show(Number.isFinite(start) ? start - 1 : 0);
   })();
 </script>
+<div class="nmodal" id="nmodal" hidden><div class="nm-card" role="dialog" aria-modal="true" aria-labelledby="nm-title">
+  <button type="button" class="nm-x" id="nm-x" aria-label="Fechar">✕</button>
+  <h3 id="nm-title"></h3><p class="nm-sub" id="nm-sub"></p>
+  <svg id="nm-svg" viewBox="0 0 600 300" role="img" aria-label="Um neurônio por dentro"></svg>
+  <div id="nm-tbl"></div><p class="nm-text" id="nm-text"></p>
+</div></div>
 </body>
 </html>
