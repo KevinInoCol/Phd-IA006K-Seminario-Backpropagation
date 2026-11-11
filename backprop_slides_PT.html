@@ -1040,6 +1040,17 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
       let yy = y;
       lines.forEach((l, k) => {
         const m = /^∂E\/∂(\S+) (= .*)$/.exec(l);
+        const mh = /^E = ½(.*)$/.exec(l);
+        if (mh) {
+          const size = 13.5, st = `font-size:${size}px;font-weight:${k ? 400 : 700};fill:${col}`;
+          const w0 = 28, wr = mh[1].length * size * 0.56, s = x - (w0 + 14 + wr) / 2, fx = s + w0 + 6;
+          h.txt(s, yy + 5, "E =", { style: st }, g);
+          h.txt(fx, yy - 5, "1", { "text-anchor": "middle", style: st }, g);
+          h.el("line", { x1: fx - 6, y1: yy, x2: fx + 6, y2: yy, stroke: col, "stroke-width": 1.4 }, g);
+          h.txt(fx, yy + 14, "2", { "text-anchor": "middle", style: st }, g);
+          h.txt(fx + 9, yy + 5, mh[1], { style: st }, g);
+          yy += 34; return;
+        }
         if (m) { fracText(h, x, yy, m[1], m[2], col, !k, g); yy += 36; }
         else { h.txt(x, yy, l, { "text-anchor": "middle", style: `font-size:13.5px;font-weight:${k ? 400 : 700};fill:${col}` }, g); yy += 17; }
       });
@@ -1120,12 +1131,14 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
     const EQ4 = dd(MI("E"), MI("y")) + `<mo>=</mo><mi>y</mi><mo>−</mo><mi>d</mi>`;
     const EQ5 = dd(MI("E"), MI("x")) + `<mo>=</mo>` + dd(MI("E"), MI("y")) + `<mo>·</mo><mi>y</mi><mo stretchy="false">(</mo><mn>1</mn><mo>−</mo><mi>y</mi><mo stretchy="false">)</mo>`;
     const EQ6 = dd(MI("E"), SB("w", "ji")) + `<mo>=</mo>` + dd(MI("E"), SB("x", "j")) + `<mo>·</mo>` + SB("y", "i");
+    const CG = s => `<span style="color:var(--fwd);font-weight:700">${s}</span>`, CV = s => `<span style="color:#7048e8;font-weight:700">${s}</span>`;
+    const EQ6c = dd(MI("E"), SB("w", "ji")) + `<mo>=</mo><mrow style="color:var(--fwd)">` + dd(MI("E"), SB("x", "j")) + `</mrow><mo>·</mo><mrow style="color:#7048e8">` + SB("y", "i") + `</mrow>`;
     const EQ7 = dd(MI("E"), SB("y", "i")) + `<mo>=</mo><munder><mo>∑</mo><mi>j</mi></munder>` + dd(MI("E"), SB("x", "j")) + `<mo>·</mo>` + SB("w", "ji");
     const EQ8 = `<mi mathvariant="normal">Δ</mi><mi>w</mi><mo>=</mo><mrow><mo form="prefix" lspace="0" rspace="0">−</mo><mi>ε</mi></mrow>` + dd(MI("E"), MI("w"));
     const TX = {
       e4: "Eq. 4 · derivar o erro", n4: "negativo: a saída devia <b>subir</b>.",
       e5: "Eq. 5 · atravessar a sigmoide", n5: "y(1 − y) é a derivada da sigmoide.",
-      e6: "Eq. 6 · culpa de cada peso", w: "peso", n6: "culpa do neurônio de cima × o que passou pelo peso.",
+      e6: "Eq. 6 · culpa de cada peso", w: "peso", n6: "<span style='color:var(--fwd);font-weight:700'>culpa do neurônio de cima</span> (passo 5) × <span style='color:#7048e8;font-weight:700'>o que passou pelo peso</span> (a saída do neurônio de baixo).",
       e7: "Eq. 7 · a culpa desce pelos pesos", e5b: "Eq. 5 de novo · atravessar a sigmoide de cada oculta",
       n7: "h₂ tem sinal contrário: o peso dela para a saída é negativo, então ela deve <b>descer</b>.",
       e8: "Eq. 8 · mover cada peso contra a sua culpa", l8: "com ε = 0,5: peso novo = peso − ε · ∂E/∂w",
@@ -1143,14 +1156,14 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
         text: `Mesma coisa na saída:<br>0,65·0,7 + 0,52·(−0,6) + 0,2 = <b>${f2(no)}</b><br>σ(${f2(no)}) = <b>${f2(y)}</b>.<br>A rede responde <b>${f2(y)}</b>, mas devia ser <b>1</b>.`,
         draw(h) { base(h, { ...fwd, edgeCol: { u: FWD, v: FWD } }); note(h, 510, 240, [`soma = ${f2(no)}`], FWD); } },
       { name: "Erro", dur: 6000,
-        text: `Equação do erro no artigo (<span class="bwd">Eq. 3</span>):<div style="font-size:1.3em;margin:4px 0 8px"><math><mrow><mi>E</mi><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><munder><mo>∑</mo><mi>c</mi></munder><munder><mo>∑</mo><mi>j</mi></munder><msup><mrow><mo stretchy="false">(</mo><msub><mi>y</mi><mrow><mi>j</mi><mo>,</mo><mi>c</mi></mrow></msub><mo>−</mo><msub><mi>d</mi><mrow><mi>j</mi><mo>,</mo><mi>c</mi></mrow></msub><mo stretchy="false">)</mo></mrow><mn>2</mn></msup></mrow></math></div>Aqui há <b>um só exemplo</b> (c) e <b>uma só saída</b> (j), então as duas somas Σ desaparecem:<div style="background:var(--bwd-soft);border-radius:8px;padding:6px 10px;margin:6px 0"><math display="block"><mrow><mi>E</mi><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><msup><mrow><mo stretchy="false">(</mo><mi>y</mi><mo>−</mo><mi>d</mi><mo stretchy="false">)</mo></mrow><mn>2</mn></msup></mrow></math></div>E = ½ (${f2(y)} − 1)² = <b>${f2(E, 3)}</b>.<br><br>Agora a pergunta: <b>quanto cada peso tem de culpa</b> por esse erro?`,
+        text: `Equação do erro no artigo (<span class="bwd">Eq. 3</span>):<div style="font-size:1.3em;margin:4px 0 8px"><math><mrow><mi>E</mi><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><munder><mo>∑</mo><mi>c</mi></munder><munder><mo>∑</mo><mi>j</mi></munder><msup><mrow><mo stretchy="false">(</mo><msub><mi>y</mi><mrow><mi>j</mi><mo>,</mo><mi>c</mi></mrow></msub><mo>−</mo><msub><mi>d</mi><mrow><mi>j</mi><mo>,</mo><mi>c</mi></mrow></msub><mo stretchy="false">)</mo></mrow><mn>2</mn></msup></mrow></math></div>Aqui há <b>um só exemplo</b> (c) e <b>uma só saída</b> (j), então as duas somas Σ desaparecem:<div style="background:var(--bwd-soft);border-radius:8px;padding:6px 10px;margin:6px 0;font-size:1.2em"><math display="block"><mrow><mi>E</mi><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><msup><mrow><mo stretchy="false">(</mo><mi>y</mi><mo>−</mo><mi>d</mi><mo stretchy="false">)</mo></mrow><mn>2</mn></msup></mrow></math></div><div style="font-size:1.2em;margin:2px 0 4px"><math display="block"><mrow><mi>E</mi><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><msup><mrow><mo stretchy="false">(</mo><mn>${f2(y)}</mn><mo>−</mo><mn>1</mn><mo stretchy="false">)</mo></mrow><mn>2</mn></msup><mo>=</mo><mn mathvariant="bold" style="color:var(--accent)">${f2(E, 3)}</mn></mrow></math></div>Agora a pergunta: <b>quanto cada peso tem de culpa</b> por esse erro?`,
         draw(h) { base(h, fwd); note(h, 510, 250, [`E = ½(${f2(y)} − 1)²`, `= ${f2(E, 3)}`], BWD); } },
       { name: "Para trás: saída", dur: 7000,
         text: `${card(TX.e4, "bwd", EQ4, [`${f2(y)} − 1 = <b>${f2(dy, 3)}</b>`, TX.n4])}${card(TX.e5, "bwd", EQ5, [`${f2(dy, 3)} · ${f2(y)} · ${f2(1 - y)} = <b>${f2(dxo, 3)}</b>`, TX.n5])}`,
         draw(h) { base(h, fwd); note(h, 510, 240, [`∂E/∂y = ${f2(dy, 3)}`, `∂E/∂x = ${f2(dxo, 3)}`], BWD); } },
       { name: "Pesos da saída", dur: 7000,
-        text: `${card(TX.e6, "bwd", EQ6, [`${TX.w} 0,7: ${f2(dxo, 3)} · ${f2(h1)} = <b>${f2(gu, 3)}</b>`, `${TX.w} −0,6: ${f2(dxo, 3)} · ${f2(h2)} = <b>${f2(gv, 3)}</b>`, TX.n6])}`,
-        draw(h) { base(h, { ...fwd, edgeCol: { u: BWD, v: BWD }, wcol: { u: "var(--bwd)", v: "var(--bwd)" }, wlab: { u: `∂E/∂w = ${f2(gu, 3)}`, v: `∂E/∂w = ${f2(gv, 3)}` } }); note(h, 510, 240, [`∂E/∂x = ${f2(dxo, 3)}`], BWD, 0); } },
+        text: `${card(TX.e6, "bwd", EQ6c, [`${TX.w} 0,7: ${CG(f2(dxo, 3))} · ${CV(f2(h1))} = <b>${f2(gu, 3)}</b>`, `${TX.w} −0,6: ${CG(f2(dxo, 3))} · ${CV(f2(h2))} = <b>${f2(gv, 3)}</b>`, TX.n6])}`,
+        draw(h) { base(h, { ...fwd, edgeCol: { u: BWD, v: BWD }, wcol: { u: "var(--bwd)", v: "var(--bwd)" }, wlab: { u: `∂E/∂w = ${f2(gu, 3)}`, v: `∂E/∂w = ${f2(gv, 3)}` } }); note(h, 510, 240, [`∂E/∂x = ${f2(dxo, 3)}`], FWD, 0); } },
       { name: "A culpa desce", dur: 8000,
         text: `${card(TX.e7, "bwd", EQ7, [`h₁: ${f2(dxo, 3)} · 0,7 = <b>${f2(dh1, 3)}</b>`, `h₂: ${f2(dxo, 3)} · (−0,6) = <b>${fs(dh2)}</b>`])}${card(TX.e5b, "bwd", EQ5, [`h₁: ${f2(dh1, 3)} · ${f2(h1)} · ${f2(1 - h1)} = <b>${f2(dx1, 3)}</b>`, `h₂: ${fs(dh2)} · ${f2(h2)} · ${f2(1 - h2)} = <b>${fs(dx2)}</b>`])}${TX.n7}`,
         draw(h) { base(h, { ...fwd, edgeCol: { u: BWD, v: BWD } }); note(h, 405, 56, [`∂E/∂y = ${f2(dh1, 3)}`, `∂E/∂x = ${f2(dx1, 3)}`], BWD); note(h, 405, 266, [`∂E/∂y = ${fs(dh2)}`, `∂E/∂x = ${fs(dx2)}`], BWD, 600); } },
