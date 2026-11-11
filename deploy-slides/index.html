@@ -1375,6 +1375,10 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
       const { el, txt } = helpers(svg, []);
       const r = run(x);
       const wcol = w => (w > 0 ? FWD : BWD);
+      // capas: franjas y etiquetas
+      [[18, 70], [124, 72], [230, 64]].forEach(([y0, hh]) => el("rect", { x: 4, y: y0, width: 592, height: hh, rx: 10, fill: "var(--bg)" }));
+      const lab = (y, lines, col) => lines.forEach((s, k) => txt(10, y + k * 15, s, { style: `font-size:${k ? 11.5 : 12.5}px;font-weight:${k ? 600 : 700};fill:${col}` }));
+      lab(44, ['camada de saída', '1 neurônio'], "var(--accent)"); lab(150, ['camada oculta', '2 neurônios'], "var(--accent)"); lab(250, ['entradas', '(não são', 'neurônios)'], "var(--muted)");
       el("line", { x1: 300, y1: 20, x2: 300, y2: 290, stroke: LINE, "stroke-dasharray": "4 5" });
       x.forEach((b, i) => [L, R].forEach((Wt, k) => {
         el("line", { x1: IX(i), y1: IY - 22, x2: H[k][0], y2: H[k][1], stroke: wcol(Wt[i]), "stroke-width": Math.abs(Wt[i]) / 3.2, opacity: b ? 0.9 : 0.2 });
@@ -1393,14 +1397,15 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
         el("circle", { cx, cy, r: rr, fill: `rgba(59,91,219,${0.08 + 0.85 * a})`, stroke: INK, "stroke-width": 2 });
         txt(cx, cy + 5, f2(a), { "text-anchor": "middle", style: `font-size:14px;font-weight:700;fill:${a > 0.5 ? "#fff" : "var(--ink)"}` });
         if (label) txt(cx, cy - rr - 8, label, { "text-anchor": "middle", style: "font-size:12px" });
-        if (sub) txt(cx + rr + 6, cy + 4, sub, { style: "font-size:11.5px" });
+        if (sub) txt(cx + rr + 13, cy + 4, sub, { style: "font-size:11.5px" });
       };
       unit(H[0][0], H[0][1], 26, r.h1, "", "bias −1,1");
       unit(H[1][0], H[1][1], 26, r.h2, "", "bias −1,1");
-      txt(H[0][0] - 34, H[0][1] + 5, "h₁", { "text-anchor": "end", style: "font-size:14px;font-weight:700;fill:var(--ink)" });
-      txt(H[1][0] - 34, H[1][1] + 5, "h₂", { "text-anchor": "end", style: "font-size:14px;font-weight:700;fill:var(--ink)" });
+      txt(H[0][0] - 40, H[0][1] + 5, "h₁", { "text-anchor": "end", style: "font-size:14px;font-weight:700;fill:var(--ink)" });
+      txt(H[1][0] - 40, H[1][1] + 5, "h₂", { "text-anchor": "end", style: "font-size:14px;font-weight:700;fill:var(--ink)" });
       unit(OUT[0], OUT[1], 28, r.y, "", "bias +6,4");
-      txt(OUT[0] - 40, OUT[1] + 5, "saída", { "text-anchor": "end", style: "font-size:12px" });
+      [[H[0], 26], [H[1], 26], [OUT, 28]].forEach(([[cx, cy], rr]) => el("circle", { cx, cy, r: rr + 7, fill: "none", stroke: ACC, "stroke-width": 2, "stroke-dasharray": "6 4" }));
+      txt(OUT[0] - 46, OUT[1] + 5, "saída", { "text-anchor": "end", style: "font-size:12px" });
       x.forEach((b, i) => {
         const g = el("g", { class: "inp", role: "button", tabindex: 0, "aria-label": `Entrada ${i + 1}` });
         el("rect", { x: IX(i) - 22, y: IY - 22, width: 44, height: 44, rx: 8, fill: b ? "#1d1d1f" : "var(--card)", stroke: INK, "stroke-width": 2 }, g);
