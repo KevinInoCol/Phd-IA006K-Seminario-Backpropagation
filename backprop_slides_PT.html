@@ -154,6 +154,9 @@
   .nm-text { font-size: 18.4px; margin: 6px 0 0; }
   .gd-speed { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
   .gd-speed input { flex: 1; accent-color: var(--accent); }
+  .xor-params { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; align-items: center; font-size: 16px; }
+  .xor-params input { accent-color: var(--accent); }
+  .xor-params b { color: var(--accent); min-width: 44px; text-align: right; }
 </style>
 </head>
 <body>
@@ -277,8 +280,9 @@
   <div class="xor-wrap">
     <canvas id="xor-canvas" width="420" height="420" aria-label="Mapa da saída da rede"></canvas>
     <div class="xor-side">
-      <p style="margin:0;font-size:24.2px">Rede 2 → 2 → 1 com sigmoides. Pesos iniciais aleatórios entre −0,3 e 0,3, <b>ε = 0,5</b> e <b>α = 0,9</b>, como no artigo. A cor mostra a saída da rede em cada ponto do plano: <span style="color:#3b5bdb;font-weight:700">azul ≈ 1</span>, claro ≈ 0.</p>
-      <div class="ecctrl"><button type="button" class="btn" id="xor-run">▶ Treinar</button><button type="button" class="btn" id="xor-reset">↺ Nova semente</button></div>
+      <p style="margin:0;font-size:24.2px">Rede 2 → 2 → 1 com sigmoides. Pesos iniciais aleatórios entre −0,3 e 0,3. Teste diferentes <b>ε</b> e <b>α</b> (no artigo: ε = 0,5 e α = 0,9). A cor mostra a saída da rede em cada ponto do plano: <span style="color:#3b5bdb;font-weight:700">azul ≈ 1</span>, claro ≈ 0.</p>
+      <div class="xor-params"><span>ε · taxa de aprendizado</span><input type="range" id="xor-eps" min="0.05" max="4" step="0.05" value="0.5" aria-label="ε"><b id="xor-eps-v">0,5</b><span>α · momento</span><input type="range" id="xor-alpha" min="0" max="0.99" step="0.01" value="0.9" aria-label="α"><b id="xor-alpha-v">0,9</b></div>
+      <div class="ecctrl"><button type="button" class="btn" id="xor-run">▶ Treinar</button><button type="button" class="btn" id="xor-art">↺ valores do artigo</button><button type="button" class="btn" id="xor-reset">↺ Nova semente</button></div>
       <div class="stat"><span>semente <b id="xor-seed">1</b></span><span>varreduras <b id="xor-t">0</b></span><span>erro E <b id="xor-e">–</b></span></div>
       <svg id="xor-loss" viewBox="0 0 600 230" role="img" aria-label="Curva do erro"></svg>
       <div id="xor-msg"></div>
@@ -1279,7 +1283,7 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
     const lossSvg = document.getElementById("xor-loss");
     const runBtn = document.getElementById("xor-run"), resetBtn = document.getElementById("xor-reset");
     const D = [[0, 0, 0], [0, 1, 1], [1, 0, 1], [1, 1, 0]];
-    const EPS = 0.5, ALPHA = 0.9, MAXT = 3000;
+    let EPS = 0.5, ALPHA = 0.9; const MAXT = 3000;
     let seed = 1, W, dW, t, hist, raf = null;
     function init() {
       let s = seed; const r = () => ((s = (s * 16807) % 2147483647) / 2147483647) * 0.6 - 0.3;
@@ -1335,8 +1339,8 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
       for (let k = 0; k < 3 && t < MAXT; k++) { hist.push(sweep()); t++; }
       draw();
       const E = hist[hist.length - 1];
-      if (E < 0.01) { stop(); document.getElementById("xor-msg").innerHTML = `✓ Aprendeu o XOR em <b>${t}</b> varreduras. As camadas ocultas acharam sozinhas as “duas retas”.`; return; }
-      if (t >= MAXT) { stop(); document.getElementById("xor-msg").innerHTML = `✗ Depois de ${MAXT} varreduras o erro parou em ${f2(E, 3)}: a rede <b>ficou presa</b>. É o problema dos mínimos locais de que o artigo fala. Tente outra semente.`; return; }
+      if (E < 0.01) { stop(); document.getElementById("xor-msg").innerHTML = `✓ (ε = ${fmt(EPS)}, α = ${fmt(ALPHA)}) Aprendeu o XOR em <b>${t}</b> varreduras. As camadas ocultas acharam sozinhas as “duas retas”.`; return; }
+      if (t >= MAXT) { stop(); document.getElementById("xor-msg").innerHTML = `✗ (ε = ${fmt(EPS)}, α = ${fmt(ALPHA)}) Depois de ${MAXT} varreduras o erro parou em ${f2(E, 3)}: a rede <b>ficou presa</b>. É o problema dos mínimos locais de que o artigo fala. Tente outra semente.`; return; }
       raf = requestAnimationFrame(frame);
     }
     runBtn.addEventListener("click", () => {
@@ -1345,6 +1349,11 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
       runBtn.textContent = "⏸ Pausar"; raf = requestAnimationFrame(frame);
     });
     resetBtn.addEventListener("click", () => { stop(); seed++; init(); });
+    const eR = document.getElementById("xor-eps"), aR = document.getElementById("xor-alpha");
+    const fmt = v => String(+(+v).toFixed(2)).replace(".", ",");
+    const sync = () => { EPS = +eR.value; ALPHA = +aR.value; document.getElementById("xor-eps-v").textContent = fmt(EPS); document.getElementById("xor-alpha-v").textContent = fmt(ALPHA); };
+    [eR, aR].forEach(r => { r.addEventListener("input", sync); r.addEventListener("change", () => { stop(); sync(); init(); }); });
+    document.getElementById("xor-art").addEventListener("click", () => { stop(); eR.value = 0.5; aR.value = 0.9; sync(); init(); });
     init();
     REG(lossSvg, { n: () => 1, cur: () => 0, go: () => {}, stop });
   })();
