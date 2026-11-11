@@ -1133,6 +1133,7 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
     const EQ6 = dd(MI("E"), SB("w", "ji")) + `<mo>=</mo>` + dd(MI("E"), SB("x", "j")) + `<mo>·</mo>` + SB("y", "i");
     const CG = s => `<span style="color:var(--fwd);font-weight:700">${s}</span>`, CV = s => `<span style="color:#7048e8;font-weight:700">${s}</span>`;
     const EQ6c = dd(MI("E"), SB("w", "ji")) + `<mo>=</mo><mrow style="color:var(--fwd)">` + dd(MI("E"), SB("x", "j")) + `</mrow><mo>·</mo><mrow style="color:#7048e8">` + SB("y", "i") + `</mrow>`;
+    const CB = s => `<span style="color:var(--accent);font-weight:700">${s}</span>`;
     const EQ7 = dd(MI("E"), SB("y", "i")) + `<mo>=</mo><munder><mo>∑</mo><mi>j</mi></munder>` + dd(MI("E"), SB("x", "j")) + `<mo>·</mo>` + SB("w", "ji");
     const EQ8 = `<mi mathvariant="normal">Δ</mi><mi>w</mi><mo>=</mo><mrow><mo form="prefix" lspace="0" rspace="0">−</mo><mi>ε</mi></mrow>` + dd(MI("E"), MI("w"));
     const TX = {
@@ -1141,7 +1142,7 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
       e6: "Eq. 6 · culpa de cada peso", w: "peso", n6: "<span style='color:var(--fwd);font-weight:700'>culpa do neurônio de cima</span> (passo 5) × <span style='color:#7048e8;font-weight:700'>o que passou pelo peso</span> (a saída do neurônio de baixo).",
       e7: "Eq. 7 · a culpa desce pelos pesos", e5b: "Eq. 5 de novo · atravessar a sigmoide de cada oculta",
       n7: "h₂ tem sinal contrário: o peso dela para a saída é negativo, então ela deve <b>descer</b>.",
-      e8: "Eq. 8 · mover cada peso contra a sua culpa", l8: "com ε = 0,5: peso novo = peso − ε · ∂E/∂w",
+      e8: "Eq. 8 · mover cada peso contra a sua culpa", l8: "com ε = 0,5: <math style='font-size:1.1em'><mstyle displaystyle='true'><msub><mi>w</mi><mtext>novo</mtext></msub><mo>=</mo><mi>w</mi><mo>−</mo><mi>ε</mi><mfrac><mrow><mo>∂</mo><mi>E</mi></mrow><mrow><mo>∂</mo><mi>w</mi></mrow></mfrac></mstyle></math>", l8b: "<span style='color:var(--accent);font-weight:700'>em azul</span>: a culpa de cada peso (passos 6 e 7)",
       n8a: "Os pesos que saem de x₂ <b>não mudam</b>: x₂ = 0, não teve culpa.",
       n8b: (a, b, c, d) => `Nova saída: <b>${a}</b> (era ${b}). Erro: ${c} → <b>${d}</b>. Repetindo muitas vezes, chega perto de 1.`
     };
@@ -1168,7 +1169,7 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
         text: `${card(TX.e7, "bwd", EQ7, [`h₁: ${f2(dxo, 3)} · 0,7 = <b>${f2(dh1, 3)}</b>`, `h₂: ${f2(dxo, 3)} · (−0,6) = <b>${fs(dh2)}</b>`])}${card(TX.e5b, "bwd", EQ5, [`h₁: ${f2(dh1, 3)} · ${f2(h1)} · ${f2(1 - h1)} = <b>${f2(dx1, 3)}</b>`, `h₂: ${fs(dh2)} · ${f2(h2)} · ${f2(1 - h2)} = <b>${fs(dx2)}</b>`])}${TX.n7}`,
         draw(h) { base(h, { ...fwd, edgeCol: { u: BWD, v: BWD } }); note(h, 405, 56, [`∂E/∂y = ${f2(dh1, 3)}`, `∂E/∂x = ${f2(dx1, 3)}`], BWD); note(h, 405, 266, [`∂E/∂y = ${fs(dh2)}`, `∂E/∂x = ${fs(dx2)}`], BWD, 600); } },
       { name: "Atualizar", dur: 9000,
-        text: `${card(TX.e8, "fwd", EQ8, [TX.l8, `0,7 → <b>${f2(N.u, 3)}</b> · −0,6 → <b>${f2(N.v, 3)}</b>`, `0,5 → <b>${f2(N.a, 3)}</b> · 0,3 → <b>${f2(N.c, 3)}</b>`])}${TX.n8a}<br>${TX.n8b(f2(y2, 3), f2(y, 3), f2(E, 3), f2(E2, 3))}`,
+        text: `${card(TX.e8, "fwd", EQ8, [TX.l8, `0,7 − 0,5 · ${CB(`(${fs(gu)})`)} = ${CG(f2(N.u, 3))}`, `−0,6 − 0,5 · ${CB(`(${fs(gv)})`)} = ${CG(f2(N.v, 3))}`, `0,5 − 0,5 · ${CB(`(${fs(dx1 * x1)})`)} = ${CG(f2(N.a, 3))}`, `0,3 − 0,5 · ${CB(`(${fs(dx2 * x1)})`)} = ${CG(f2(N.c, 3))}`, TX.l8b])}${TX.n8a}<br>${TX.n8b(f2(y2, 3), f2(y, 3), f2(E, 3), f2(E2, 3))}`,
         draw(h) { base(h, { y: f2(y2), wcol: { a: "var(--fwd)", c: "var(--fwd)", u: "var(--fwd)", v: "var(--fwd)" }, wlab: { a: f2(N.a, 3), c: f2(N.c, 3), u: f2(N.u, 3), v: f2(N.v, 3) }, b1: N.b1, b2: N.b2, bo: N.bo }); note(h, 510, 240, [`E: ${f2(E, 3)} → ${f2(E2, 3)}`], FWD); } }
     ]);
   })();
