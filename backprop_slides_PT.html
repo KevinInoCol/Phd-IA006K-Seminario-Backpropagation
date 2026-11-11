@@ -152,6 +152,8 @@
   .nm-card svg { width: 100%; height: auto; max-height: 44vh; display: block; }
   .nm-card .tbl td, .nm-card .tbl th { padding: 4px 10px; text-transform: none; }
   .nm-text { font-size: 18.4px; margin: 6px 0 0; }
+  .gd-speed { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+  .gd-speed input { flex: 1; accent-color: var(--accent); }
 </style>
 </head>
 <body>
@@ -263,7 +265,8 @@
   <div class="anim">
     <div class="a-left"><div class="ecchips" id="gd-chips"></div><svg id="gd-svg" viewBox="0 0 600 340" role="img" aria-label="Descida do gradiente"></svg></div>
     <div class="a-right"><div class="ectext" id="gd-text" aria-live="polite"></div>
-      <div class="ecctrl"><button type="button" id="gd-prev">◀</button><button type="button" id="gd-play">▶ Reproduzir tudo</button><button type="button" id="gd-next">▶</button></div>
+      <div class="gd-speed"><span>🐢 lenta</span><input type="range" id="gd-speed" min="0.25" max="2" step="0.25" value="1" aria-label="velocidade"><span>rápida</span><b id="gd-speed-v" style="min-width:42px;color:var(--accent)">1×</b></div>
+      <div class="ecctrl"><button type="button" id="gd-prev">◀</button><button type="button" id="gd-play">▶ Reproduzir tudo</button><button type="button" id="gd-next">▶</button><button type="button" id="gd-replay" title="Repetir a animação" aria-label="Repetir a animação">↻</button></div>
       <p class="cap"><span class="ours">ilustração nossa</span> Curva inventada, com um único peso. Os passos são calculados de verdade com as Eq. 8 e 9.</p></div>
   </div>
 </section>
@@ -1193,18 +1196,47 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
       txt(26, 30, "erro E", { style: "font-size:13px" });
       txt(570, 330, "peso w", { "text-anchor": "end", style: "font-size:13px" });
     }
+    const GDL = { step: "passo" };
+    const gdSpeed = () => { const r = document.getElementById("gd-speed"); return r ? +r.value : 1; };
     function animate(h, path, label, col) {
-      const { el, txt, later } = h;
-      const ball = el("circle", { cx: X(path[0]), cy: Y(Ef(path[0])) - 9, r: 9, fill: col });
-      const info = txt(300, 30, "", { "text-anchor": "middle", style: `font-size:16px;font-weight:700;fill:${col}` });
-      const step = path.length > 60 ? 45 : 140;
-      path.forEach((w, i) => later(400 + i * step, () => {
-        const cx = X(Math.max(-4.1, Math.min(4.1, w))), cy = Y(Ef(Math.max(-4.1, Math.min(4.1, w)))) - 9;
-        if (i) el("circle", { cx, cy: cy + 9, r: 2.5, fill: col, opacity: 0.5 });
-        ball.setAttribute("cx", cx); ball.setAttribute("cy", cy);
-        info.textContent = `${label} · passo ${i} · E = ${f2(Ef(w), 3)}`;
-      }));
+      const { el, txt, later } = h, sp = gdSpeed();
+      const P = w => { const c = Math.max(-4.1, Math.min(4.1, w)); return [X(c), Y(Ef(c)) - 9]; };
+      const [bx, by] = P(path[0]);
+      const ball = el("circle", { cx: bx, cy: by, r: 9, fill: col });
+      const info = txt(300, 30, `${label} · ${GDL.step} 0 · E = ${f2(Ef(path[0]), 3)}`, { "text-anchor": "middle", style: `font-size:16px;font-weight:700;fill:${col}` });
+      const small = path.length > 30 ? 120 : 260;
+      let t0 = 500 / sp;
+      for (let i = 1; i < path.length; i++) {
+        const [x0, y0] = P(path[i - 1]), [x1, y1] = P(path[i]);
+        const jump = Math.abs(x1 - x0) > 30, dur = (jump ? 1100 : small) / sp, N = jump ? 36 : Math.max(2, Math.round(dur / 35));
+        const hgt = Math.min(110, 0.45 * Math.abs(x1 - x0)), qx = (x0 + x1) / 2, qy = Math.min(y0, y1) - 2 * hgt;
+        if (jump) {
+          const arc = el("path", { d: `M${x0} ${y0} Q${qx} ${qy} ${x1} ${y1}`, fill: "none", stroke: col, "stroke-width": 2, "stroke-dasharray": "6 5", opacity: 0 });
+          later(t0, () => arc.setAttribute("opacity", 0.55));
+        }
+        for (let k = 1; k <= N; k++) {
+          const u = k / N, w0 = path[i - 1], w1 = path[i];
+          later(t0 + u * dur, () => {
+            let x, y;
+            if (jump) { x = (1 - u) ** 2 * x0 + 2 * u * (1 - u) * qx + u * u * x1; y = (1 - u) ** 2 * y0 + 2 * u * (1 - u) * qy + u * u * y1; }
+            else [x, y] = P(w0 + (w1 - w0) * u);
+            ball.setAttribute("cx", x); ball.setAttribute("cy", y);
+          });
+        }
+        later(t0 + dur, () => {
+          el("circle", { cx: x1, cy: y1 + 9, r: 2.5, fill: col, opacity: 0.5 });
+          info.textContent = `${label} · ${GDL.step} ${i} · E = ${f2(Ef(path[i]), 3)}`;
+        });
+        t0 += dur + (jump ? 300 / sp : 0);
+      }
     }
+    // control de velocidad y botón repetir
+    (function () {
+      const r = document.getElementById("gd-speed"), v = document.getElementById("gd-speed-v"), rep = document.getElementById("gd-replay");
+      const replay = () => { const b = document.querySelector("#gd-chips button.on"); if (b) b.click(); };
+      if (r) { r.addEventListener("input", () => { v.textContent = (+r.value).toString().replace(".", ",") + "×"; }); r.addEventListener("change", replay); }
+      if (rep) rep.addEventListener("click", replay);
+    })();
     // ----- Tarjetas con las Ec. 8 y 9 en formato matemático -----
     const dEdw = `<mfrac><mrow><mo>∂</mo><mi>E</mi></mrow><mrow><mo>∂</mo><mi>w</mi></mrow></mfrac>`;
     const DW = `<mi mathvariant="normal">Δ</mi><mi>w</mi>`, MEPS = `<mrow><mo form="prefix" lspace="0" rspace="0">−</mo><mi>ε</mi></mrow>`;
@@ -1216,7 +1248,7 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
     const G0 = dEdw + `<mo>=</mo><mn>0</mn><mspace width="0.6em"/><mo>⇒</mo><mspace width="0.6em"/>` + DW + `<mo>=</mo><mn>0</mn>`;
     const G9 = DW + `<mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>=</mo>` + MEPS + dEdw + `<mo>+</mo><mi>α</mi>` + DW + `<mo stretchy="false">(</mo><mi>t</mi><mo>−</mo><mn>1</mn><mo stretchy="false">)</mo>`;
     stepper("gd", [
-      { name: "Inclinação", dur: 6000,
+      { name: "Inclinação", get dur() { return 8000 / gdSpeed(); },
         text: gcard("A inclinação onde está a bola", "accent", dEdw, ["calculada pelas Eq. 4–7: é isso que o backprop faz"]) + "Imagine o erro como uma <b>paisagem</b>: cada valor do peso tem um erro. Não vemos a paisagem inteira, só o chão sob os pés.",
         draw(h) {
           curve(h);
@@ -1225,16 +1257,16 @@ otimizador.step()              <span class="c"># SGD com momento: ε e α   (Eq.
           h.el("circle", { cx: X(w), cy: Y(e) - 9, r: 9, fill: ACC });
           h.txt(X(w) - 20, Y(e) - 30, `inclinação = ${f2(g)}`, { "text-anchor": "end", style: "font-size:14px;font-weight:700;fill:var(--bwd)" });
         } },
-      { name: "Descer (Eq. 8)", dur: 7500,
+      { name: "Descer (Eq. 8)", get dur() { return 7500 / gdSpeed(); },
         text: gcard("Eq. 8 · descida do gradiente", "accent", G8, ["<b>−</b>: direção oposta ao gradiente", "<b>ε</b>: taxa de aprendizado; aqui ε = 0,4", "o tamanho do passo depende da inclinação"]) + "A atualização corresponde ao método da <b>máxima descida de Cauchy</b>: em cada iteração, o parâmetro avança na direção de maior redução local do erro, isto é, na direção oposta ao gradiente. A bola desce até um ponto em que a inclinação se anula.",
         draw(h) { curve(h); animate(h, run(3.9, 0.4, 0), "ε = 0,4", ACC); } },
-      { name: "ε grande demais", dur: 6000,
+      { name: "ε grande demais", get dur() { return 8000 / gdSpeed(); },
         text: gcard("Eq. 8 com ε grande demais", "bwd", G8, ["ε = 3,2: cada passo é 8 vezes mais longo"]) + "A bola salta por cima do vale e cai em outro lugar. Aqui foi parar no vale pior. Escolher ε é um compromisso entre <b>velocidade</b> e <b>estabilidade</b>.",
         draw(h) { curve(h); animate(h, run(3.9, 3.2, 0, 10), "ε = 3,2", BWD); } },
-      { name: "Mínimo local", dur: 8500,
+      { name: "Mínimo local", get dur() { return 8500 / gdSpeed(); },
         text: gcard("No fundo de qualquer vale", "bwd", G0, ["a Eq. 8 para de mover o peso"]) + "Começando do outro lado, a bola para no <b>mínimo local</b>: um vale que não é o mais fundo. Ali a inclinação é zero e a Eq. 8 não manda sair. O artigo admite esse problema (p. 535).",
         draw(h) { curve(h); animate(h, run(-3.9, 0.4, 0), "ε = 0,4", BWD); } },
-      { name: "Momento (Eq. 9)", dur: 10000,
+      { name: "Momento (Eq. 9)", get dur() { return 10000 / gdSpeed(); },
         text: gcard("Eq. 9 · descida com momento", "accent", G9, [im(MEPS + dEdw) + ": contribuição do gradiente atual", im(`<mi>α</mi>` + DW + `<mo stretchy="false">(</mo><mi>t</mi><mo>−</mo><mn>1</mn><mo stretchy="false">)</mo>`) + ": fração da atualização anterior (α = 0,8)"]) + "Em relação ao método de Cauchy (Eq. 8), a Eq. 9 acrescenta uma parcela da atualização anterior. Esse <b>momento</b> suaviza as mudanças de direção e pode acelerar o deslocamento em regiões de gradiente consistente. Não garante escapar de mínimos locais.",
         draw(h) { curve(h); animate(h, run(-3.9, 0.4, 0.8), "ε = 0,4 · α = 0,8", FWD); } }
     ]);
